@@ -58,7 +58,13 @@ fn main() {
         .edit_schedule(Update, |schedule| {
             schedule.set_executor_kind(ExecutorKind::SingleThreaded);
         })
-        .add_systems(Startup, setup)
+        .init_state::<AppState>()
+        .add_systems(Startup, restart)
+        .add_systems(PreUpdate, trigger_restart)
+        .add_systems(PreStartup, spawn_immortals)
+        .add_systems(OnEnter(AppState::Restarting), restart)
+        .add_systems(OnEnter(AppState::Running), setup)
+        .add_systems(OnExit(AppState::Running), teardown)
         .add_plugins(bevy_mod_imgui::ImguiPlugin {
             ini_filename: Some("hello-world.ini".into()),
             font_oversample_h: 2,
@@ -66,8 +72,8 @@ fn main() {
             ..default()
         })
         .add_plugins(SimpleSubsecondPlugin::default())
-        .add_systems(Update, (greet, rotator_system))
-        .add_systems(Update, imgui_example_ui);
+        .add_systems(Update, (greet, rotator_system).run_if(in_state(AppState::Running)))
+        .add_systems(Update, imgui_example_ui.run_if(in_state(AppState::Running)));
 
     app.run();
 }
@@ -75,6 +81,61 @@ fn main() {
 #[derive(Component)]
 struct FirstPassEntity;
 
+/// Boilerplate for setting up a basic restarting architecture:
+/// The two states (Re)starting and Running
+#[derive(States, Default, Debug, Clone, Hash, Eq, PartialEq)]
+enum AppState {
+    /// Nothing happens in this state other than moving immediately to the Running state
+    #[default]
+    Restarting,
+    // When we enter this state, we run any user-defined setup code (what would normally live in Startup / Prestartup for example)
+    // When we exit this state we tear down anything that was spawned
+    Running,
+}
+
+
+/// Boilerplate for setting up a basic restarting architecture:
+/// Moves the state into AppState::Running so that the OnEnter(AppState::Running) system is called
+fn restart(mut next_state: ResMut<NextState<AppState>>) {
+    println!("restart!");
+    next_state.set(AppState::Running);
+}
+
+/// Boilerplate for setting up a basic restarting architecture:
+/// Moves the state into AppState::Running so that the OnEnter(AppState::Running) system is called
+fn trigger_restart(input: Res<ButtonInput<KeyCode>>, mut next_state: ResMut<NextState<AppState>>) {
+    if input.just_pressed(KeyCode::KeyR) {
+        println!("user triggered restart");
+        next_state.set(AppState::Restarting);
+    }
+}
+
+/// Marker component for things we spawn once and never despawn
+#[derive(Component)]
+struct Immortal;
+
+/// We spawn these once in PreStartup and never need to despawn this
+fn spawn_immortals(mut commands: Commands, mut settings: ResMut<bevy_framepace::FramepaceSettings>) {
+    println!("immortal");
+    use bevy_framepace::Limiter;
+    settings.limiter = Limiter::from_framerate(30.0);
+    
+    commands.spawn((Camera2d, Immortal));
+}
+
+/// User-defined teardown code can live here
+/// If you kill all the Windows it will quit the app, so we use Without<PrimaryWindow> here
+/// We also don't despawn the "immortals"
+fn teardown(
+    mut commands: Commands,
+    query: Query<Entity, (Without<bevy::window::PrimaryWindow>, Without<Immortal>)>,
+) {
+    println!("teardown!");
+    for entity in query.iter() {
+        println!("despawned thing");
+        commands.entity(entity).despawn();
+    }
+}
 
 
 #[hot]
@@ -93,8 +154,8 @@ fn setup(
     mut settings: ResMut<bevy_framepace::FramepaceSettings>,
     mut images: ResMut<Assets<Image>>,
 ) {
-    use bevy_framepace::Limiter;
-    settings.limiter = Limiter::from_framerate(30.0);
+    println!("setup!");
+    
 
     // rendered texture
     let size = Extent3d {
@@ -143,17 +204,6 @@ fn setup(
         first_pass_layer,
     ));
 
-    // This material has the texture that has been rendered.
-    let material_handle = smaterials.add(StandardMaterial {
-        base_color_texture: Some(image_handle.clone()),
-        reflectance: 0.02,
-        unlit: false,
-        ..default()
-    });
-
-
-
-
     // //main plane
     // commands.spawn((
     //     Mesh3d(meshes.add(Plane3d::default().mesh().size(5.0, 5.0))),
@@ -164,16 +214,17 @@ fn setup(
     // main light
 
     // first pass light
-    commands.spawn((
-        PointLight {
-            shadows_enabled: true,
-            ..default()
-        },
-        Transform::from_xyz(4.0, 8.0, 4.0),
-        RenderLayers::layer(1)
-    ));
+    // commands.spawn((
+    //     PointLight {
+    //         shadows_enabled: true,
+    //         ..default()
+    //     },
+    //     Transform::from_xyz(4.0, 8.0, 4.0),
+    //     RenderLayers::layer(1)
+    // ));
+
     // main camera
-    commands.spawn(Camera2d);
+    //commands.spawn(Camera2d);
 
     // commands.spawn((
     //     Transform::from_xyz(1.7, 1.7, 2.0).looking_at(Vec3::new(0.0, 0.3, 0.0), Vec3::Y),
@@ -185,8 +236,8 @@ fn setup(
 #[hot]
 fn rotator_system(time: Res<Time>, mut query: Query<&mut Transform, With<FirstPassEntity>>) {
     for mut transform in &mut query {
-        transform.rotate_x(10.5 * time.delta_secs());
-        transform.rotate_z(5.3 * time.delta_secs());
+        transform.rotate_x(1.5 * time.delta_secs());
+        transform.rotate_z(0.4 * time.delta_secs());
     }
 }
 

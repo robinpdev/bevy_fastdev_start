@@ -1,6 +1,7 @@
 use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::diagnostic::LogDiagnosticsPlugin;
 use bevy::prelude::*;
+use bevy::render::texture;
 use bevy_mod_imgui::prelude::*;
 use bevy_simple_subsecond_system::prelude::*;
 
@@ -120,9 +121,8 @@ fn setup(
     // This specifies the layer used for the first pass, which will be attached to the first pass camera and cube.
     let first_pass_layer = RenderLayers::layer(1);
 
-    //first pass plane
+    //first pass circle mesh
     let circlemesh = meshes.add(Circle::new(50.0));
-
     commands.spawn((
         Mesh2d(circlemesh),
         MeshMaterial2d(colormaterials.add(Color::srgb(0.0, 1.0, 0.0))),
@@ -131,6 +131,7 @@ fn setup(
         first_pass_layer.clone(),
     ));
 
+    //first pass camera
     commands.spawn((
         Camera2d::default(),
         Camera {
@@ -144,7 +145,7 @@ fn setup(
 
     // This material has the texture that has been rendered.
     let material_handle = smaterials.add(StandardMaterial {
-        base_color_texture: Some(image_handle),
+        base_color_texture: Some(image_handle.clone()),
         reflectance: 0.02,
         unlit: false,
         ..default()
@@ -153,25 +154,14 @@ fn setup(
 
 
 
-    // plane
-    commands.spawn((
-        Mesh3d(meshes.add(Plane3d::default().mesh().size(5.0, 5.0))),
-        MeshMaterial3d(smaterials.add(Color::srgb(0.3, 0.5, 0.3))),
-    ));
-    // cube
-    commands.spawn((
-        Mesh3d(meshes.add(Cuboid::default().mesh())),
-        MeshMaterial3d(material_handle),
-        Transform::from_xyz(0.0, 0.5, 0.0),
-    ));
-    // light
-    commands.spawn((
-        PointLight {
-            shadows_enabled: true,
-            ..default()
-        },
-        Transform::from_xyz(4.0, 8.0, 4.0),
-    ));
+    // //main plane
+    // commands.spawn((
+    //     Mesh3d(meshes.add(Plane3d::default().mesh().size(5.0, 5.0))),
+    //     MeshMaterial3d(smaterials.add(Color::srgb(0.3, 0.5, 0.3))),
+    // ));
+    //main cube
+    commands.spawn(Sprite::from_image(image_handle.clone()));
+    // main light
 
     // first pass light
     commands.spawn((
@@ -182,11 +172,13 @@ fn setup(
         Transform::from_xyz(4.0, 8.0, 4.0),
         RenderLayers::layer(1)
     ));
-    // camera
-    commands.spawn((
-        Transform::from_xyz(1.7, 1.7, 2.0).looking_at(Vec3::new(0.0, 0.3, 0.0), Vec3::Y),
-        Camera3d::default(),
-    ));
+    // main camera
+    commands.spawn(Camera2d);
+
+    // commands.spawn((
+    //     Transform::from_xyz(1.7, 1.7, 2.0).looking_at(Vec3::new(0.0, 0.3, 0.0), Vec3::Y),
+    //     Camera3d::default(),
+    // ));
 }
 
 /// Rotates the inner cube (first pass)

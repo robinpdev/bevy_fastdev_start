@@ -1,17 +1,19 @@
 use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::diagnostic::LogDiagnosticsPlugin;
+use bevy::ecs::component::ComponentId;
+use bevy::ecs::component::Components;
 use bevy::prelude::*;
 use bevy::render::texture;
 use bevy_mod_imgui::prelude::*;
 use bevy_simple_subsecond_system::prelude::*;
 
 use bevy::{
-    window::{PresentMode, WindowTheme},
     render::{
         render_asset::RenderAssetUsages,
         render_resource::{Extent3d, TextureDimension, TextureFormat, TextureUsages},
         view::RenderLayers,
-    }
+    },
+    window::{PresentMode, WindowTheme},
 };
 
 use bevy::ecs::schedule::ExecutorKind;
@@ -53,7 +55,7 @@ fn main() {
             }),
             LogDiagnosticsPlugin::default(),
             //FrameTimeDiagnosticsPlugin::default(),
-            bevy_framepace::FramepacePlugin
+            bevy_framepace::FramepacePlugin,
         ))
         .edit_schedule(Update, |schedule| {
             schedule.set_executor_kind(ExecutorKind::SingleThreaded);
@@ -71,8 +73,12 @@ fn main() {
             font_oversample_v: 2,
             ..default()
         })
+        .init_resource::<MySpawnedEntities>() // Add your resource here
         .add_plugins(SimpleSubsecondPlugin::default())
-        .add_systems(Update, (greet, rotator_system).run_if(in_state(AppState::Running)))
+        .add_systems(
+            Update,
+            (greet, rotator_system).run_if(in_state(AppState::Running)),
+        )
         .add_systems(Update, imgui_example_ui.run_if(in_state(AppState::Running)));
 
     app.run();
@@ -92,7 +98,6 @@ enum AppState {
     // When we exit this state we tear down anything that was spawned
     Running,
 }
-
 
 /// Boilerplate for setting up a basic restarting architecture:
 /// Moves the state into AppState::Running so that the OnEnter(AppState::Running) system is called
@@ -115,12 +120,18 @@ fn trigger_restart(input: Res<ButtonInput<KeyCode>>, mut next_state: ResMut<Next
 struct Immortal;
 
 /// We spawn these once in PreStartup and never need to despawn this
-fn spawn_immortals(mut commands: Commands, mut settings: ResMut<bevy_framepace::FramepaceSettings>) {
+fn spawn_immortals(
+    mut commands: Commands,
+    mut settings: ResMut<bevy_framepace::FramepaceSettings>,
+) {
     println!("immortal");
     use bevy_framepace::Limiter;
     settings.limiter = Limiter::from_framerate(30.0);
-    
-    commands.spawn((Camera2d, Immortal));
+}
+
+#[derive(Resource, Default)]
+struct MySpawnedEntities {
+    entities: Vec<Entity>,
 }
 
 /// User-defined teardown code can live here
@@ -128,15 +139,15 @@ fn spawn_immortals(mut commands: Commands, mut settings: ResMut<bevy_framepace::
 /// We also don't despawn the "immortals"
 fn teardown(
     mut commands: Commands,
-    query: Query<Entity, (Without<bevy::window::PrimaryWindow>, Without<Immortal>)>,
+    mut my_spawned_entities: ResMut<MySpawnedEntities>,
 ) {
     println!("teardown!");
-    for entity in query.iter() {
-        println!("despawned thing");
+    for entity in my_spawned_entities.entities.drain(..) {
+        // Drain to clear the vec
         commands.entity(entity).despawn();
+        println!("Despawned entity: {:?}", entity);
     }
 }
-
 
 #[hot]
 fn greet(time: Res<Time>) {
@@ -153,9 +164,9 @@ fn setup(
     mut colormaterials: ResMut<Assets<ColorMaterial>>,
     mut settings: ResMut<bevy_framepace::FramepaceSettings>,
     mut images: ResMut<Assets<Image>>,
+    mut my_spawned_entities: ResMut<MySpawnedEntities>,
 ) {
     println!("setup!");
-    
 
     // rendered texture
     let size = Extent3d {
@@ -184,25 +195,29 @@ fn setup(
 
     //first pass circle mesh
     let circlemesh = meshes.add(Circle::new(50.0));
-    commands.spawn((
-        Mesh2d(circlemesh),
-        MeshMaterial2d(colormaterials.add(Color::srgb(0.0, 1.0, 0.0))),
-        Transform::from_translation(Vec3::new(0.0, 0.0, 1.0)),
-        FirstPassEntity,
-        first_pass_layer.clone(),
-    ));
+    let emeshfp = commands
+        .spawn((
+            Mesh2d(circlemesh),
+            MeshMaterial2d(colormaterials.add(Color::srgb(0.0, 1.0, 0.0))),
+            Transform::from_translation(Vec3::new(0.0, 0.0, 1.0)),
+            FirstPassEntity,
+            first_pass_layer.clone(),
+        ))
+        .id();
 
     //first pass camera
-    commands.spawn((
-        Camera2d::default(),
-        Camera {
-            target: image_handle.clone().into(),
-            clear_color: Color::WHITE.into(),
-            ..default()
-        },
-        Transform::from_translation(Vec3::new(0.0, 0.0, 15.0)).looking_at(Vec3::ZERO, Vec3::Y),
-        first_pass_layer,
-    ));
+    let ecamerafp = commands
+        .spawn((
+            Camera2d::default(),
+            Camera {
+                target: image_handle.clone().into(),
+                clear_color: Color::WHITE.into(),
+                ..default()
+            },
+            Transform::from_translation(Vec3::new(0.0, 0.0, 15.0)).looking_at(Vec3::ZERO, Vec3::Y),
+            first_pass_layer,
+        ))
+        .id();
 
     // //main plane
     // commands.spawn((
@@ -210,7 +225,9 @@ fn setup(
     //     MeshMaterial3d(smaterials.add(Color::srgb(0.3, 0.5, 0.3))),
     // ));
     //main cube
-    commands.spawn(Sprite::from_image(image_handle.clone()));
+    let esprite = commands
+        .spawn(Sprite::from_image(image_handle.clone()))
+        .id();
     // main light
 
     // first pass light
@@ -224,7 +241,12 @@ fn setup(
     // ));
 
     // main camera
-    //commands.spawn(Camera2d);
+    let ecammain = commands.spawn(Camera2d).id();
+
+    my_spawned_entities.entities.push(emeshfp);
+    my_spawned_entities.entities.push(ecamerafp);
+    my_spawned_entities.entities.push(esprite);
+    my_spawned_entities.entities.push(ecammain);
 
     // commands.spawn((
     //     Transform::from_xyz(1.7, 1.7, 2.0).looking_at(Vec3::new(0.0, 0.3, 0.0), Vec3::Y),
@@ -240,7 +262,6 @@ fn rotator_system(time: Res<Time>, mut query: Query<&mut Transform, With<FirstPa
         transform.rotate_z(0.4 * time.delta_secs());
     }
 }
-
 
 fn imgui_example_ui(mut context: NonSendMut<ImguiContext>, mut state: ResMut<ImguiState>) {
     let ui = context.ui();

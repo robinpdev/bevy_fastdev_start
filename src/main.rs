@@ -1,9 +1,6 @@
 use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::diagnostic::LogDiagnosticsPlugin;
-use bevy::ecs::component::ComponentId;
-use bevy::ecs::component::Components;
 use bevy::prelude::*;
-use bevy::render::texture;
 use bevy_mod_imgui::prelude::*;
 use bevy_simple_subsecond_system::prelude::*;
 
@@ -54,7 +51,7 @@ fn main() {
                 ..default()
             }),
             LogDiagnosticsPlugin::default(),
-            //FrameTimeDiagnosticsPlugin::default(),
+            //FrameTimeDiagnosticsPlugin::default(), // to display fps in console
             bevy_framepace::FramepacePlugin,
         ))
         .edit_schedule(Update, |schedule| {
@@ -73,7 +70,6 @@ fn main() {
             font_oversample_v: 2,
             ..default()
         })
-        .init_resource::<MySpawnedEntities>() // Add your resource here
         .add_plugins(SimpleSubsecondPlugin::default())
         .add_systems(
             Update,
@@ -119,9 +115,9 @@ fn trigger_restart(input: Res<ButtonInput<KeyCode>>, mut next_state: ResMut<Next
 #[derive(Component)]
 struct Immortal;
 
-/// We spawn these once in PreStartup and never need to despawn this
+/// Code that is actually! run once on startup of your program
+/// You can spawn entities with the Immortal component (above) here and they will not be removed when restarting
 fn spawn_immortals(
-    mut commands: Commands,
     mut settings: ResMut<bevy_framepace::FramepaceSettings>,
 ) {
     println!("immortal");
@@ -129,9 +125,16 @@ fn spawn_immortals(
     settings.limiter = Limiter::from_framerate(30.0);
 }
 
-#[derive(Resource, Default)]
-struct MySpawnedEntities {
-    entities: Vec<Entity>,
+
+fn get_component_names(world: &World, entity: Entity) -> Option<Vec<String>> {
+    world
+        .inspect_entity(entity)
+        .ok() // Convert Result<EntityInspector, EntityDoesNotExistError> to Option<EntityInspector>
+        .map(|entity_inspector| {
+            entity_inspector
+                .map(|component_info| component_info.name().to_string()) // Get the name and convert to String
+                .collect::<Vec<String>>() // Collect into a Vec<String>
+        })
 }
 
 /// User-defined teardown code can live here
@@ -139,10 +142,25 @@ struct MySpawnedEntities {
 /// We also don't despawn the "immortals"
 fn teardown(
     mut commands: Commands,
-    mut my_spawned_entities: ResMut<MySpawnedEntities>,
+    query: Query<Entity, (Without<bevy::window::PrimaryWindow>,
+        Without<bevy::picking::pointer::PointerInteraction>,
+        Without<bevy::ecs::observer::Observer>,
+        Without<bevy::window::Monitor>,
+        Without<Immortal>)>,
 ) {
+    // if you want to see what components that entities about to be despawned have
+
+    // for entity in query.iter() {
+    //     if let Some(component_names) = get_component_names(world, entity) {
+    //         println!("Component names for entity {:?}: {:?}", entity, component_names);
+    //     } else {
+    //         // This branch is now reached if the entity doesn't exist.
+    //         println!("Entity {:?} does not exist.", entity);
+    //     }
+    // }
+
     println!("teardown!");
-    for entity in my_spawned_entities.entities.drain(..) {
+    for entity in query.iter() {
         // Drain to clear the vec
         commands.entity(entity).despawn();
         println!("Despawned entity: {:?}", entity);
@@ -157,15 +175,16 @@ fn greet(time: Res<Time>) {
     );
 }
 
+/// Runs each time the scene is (re)started
+/// Sets up a circle that gets rendered to a texture and then shown on the main context
+#[hot]
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut smaterials: ResMut<Assets<StandardMaterial>>,
     mut colormaterials: ResMut<Assets<ColorMaterial>>,
-    mut settings: ResMut<bevy_framepace::FramepaceSettings>,
     mut images: ResMut<Assets<Image>>,
-    mut my_spawned_entities: ResMut<MySpawnedEntities>,
 ) {
+
     println!("setup!");
 
     // rendered texture
@@ -195,18 +214,17 @@ fn setup(
 
     //first pass circle mesh
     let circlemesh = meshes.add(Circle::new(50.0));
-    let emeshfp = commands
+    commands
         .spawn((
             Mesh2d(circlemesh),
             MeshMaterial2d(colormaterials.add(Color::srgb(0.0, 1.0, 0.0))),
             Transform::from_translation(Vec3::new(0.0, 0.0, 1.0)),
             FirstPassEntity,
             first_pass_layer.clone(),
-        ))
-        .id();
+        ));
 
     //first pass camera
-    let ecamerafp = commands
+    commands
         .spawn((
             Camera2d::default(),
             Camera {
@@ -216,42 +234,14 @@ fn setup(
             },
             Transform::from_translation(Vec3::new(0.0, 0.0, 15.0)).looking_at(Vec3::ZERO, Vec3::Y),
             first_pass_layer,
-        ))
-        .id();
+        ));
 
-    // //main plane
-    // commands.spawn((
-    //     Mesh3d(meshes.add(Plane3d::default().mesh().size(5.0, 5.0))),
-    //     MeshMaterial3d(smaterials.add(Color::srgb(0.3, 0.5, 0.3))),
-    // ));
-    //main cube
-    let esprite = commands
-        .spawn(Sprite::from_image(image_handle.clone()))
-        .id();
-    // main light
-
-    // first pass light
-    // commands.spawn((
-    //     PointLight {
-    //         shadows_enabled: true,
-    //         ..default()
-    //     },
-    //     Transform::from_xyz(4.0, 8.0, 4.0),
-    //     RenderLayers::layer(1)
-    // ));
+    //Sprite to display the rendered texture
+    commands
+        .spawn(Sprite::from_image(image_handle.clone()));
 
     // main camera
-    let ecammain = commands.spawn(Camera2d).id();
-
-    my_spawned_entities.entities.push(emeshfp);
-    my_spawned_entities.entities.push(ecamerafp);
-    my_spawned_entities.entities.push(esprite);
-    my_spawned_entities.entities.push(ecammain);
-
-    // commands.spawn((
-    //     Transform::from_xyz(1.7, 1.7, 2.0).looking_at(Vec3::new(0.0, 0.3, 0.0), Vec3::Y),
-    //     Camera3d::default(),
-    // ));
+    commands.spawn(Camera2d);
 }
 
 /// Rotates the inner cube (first pass)

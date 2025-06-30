@@ -1,6 +1,6 @@
 use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::diagnostic::LogDiagnosticsPlugin;
-use bevy::prelude::*;
+
 use bevy_mod_imgui::prelude::*;
 use bevy_simple_subsecond_system::prelude::*;
 
@@ -14,6 +14,12 @@ use bevy::{
 };
 
 use bevy::ecs::schedule::ExecutorKind;
+use bevy::{
+    prelude::*,
+    reflect::TypePath,
+    render::render_resource::{AsBindGroup, ShaderRef},
+    sprite::{AlphaMode2d, Material2d, Material2dPlugin},
+};
 
 #[derive(Resource)]
 struct ImguiState {
@@ -27,29 +33,34 @@ fn main() {
             demo_window_open: true,
         })
         .add_plugins((
-            DefaultPlugins.set(WindowPlugin {
-                primary_window: Some(Window {
-                    title: "I am the window!".into(),
-                    name: Some("bevy.app".into()),
-                    resolution: (500., 300.).into(),
-                    present_mode: PresentMode::AutoNoVsync,
-                    // Tells Wasm to resize the window according to the available canvas
-                    fit_canvas_to_parent: true,
-                    // Tells Wasm not to override default event handling, like F5, Ctrl+R etc.
-                    prevent_default_event_handling: false,
-                    window_theme: Some(WindowTheme::Dark),
-                    enabled_buttons: bevy::window::EnabledButtons {
-                        maximize: false,
-                        ..Default::default()
-                    },
-                    // This will spawn an invisible window
-                    // The window will be made visible in the make_visible() system after 3 frames.
-                    // This is useful when you want to avoid the white window that shows up before the GPU is ready to render the app.
-                    visible: true,
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "I am the window!".into(),
+                        name: Some("bevy.app".into()),
+                        resolution: (500., 300.).into(),
+                        present_mode: PresentMode::AutoNoVsync,
+                        // Tells Wasm to resize the window according to the available canvas
+                        fit_canvas_to_parent: true,
+                        // Tells Wasm not to override default event handling, like F5, Ctrl+R etc.
+                        prevent_default_event_handling: false,
+                        window_theme: Some(WindowTheme::Dark),
+                        enabled_buttons: bevy::window::EnabledButtons {
+                            maximize: false,
+                            ..Default::default()
+                        },
+                        // This will spawn an invisible window
+                        // The window will be made visible in the make_visible() system after 3 frames.
+                        // This is useful when you want to avoid the white window that shows up before the GPU is ready to render the app.
+                        visible: true,
+                        ..default()
+                    }),
                     ..default()
+                })
+                .set(AssetPlugin {
+                    watch_for_changes_override: Some(true),
+                    ..Default::default()
                 }),
-                ..default()
-            }),
             LogDiagnosticsPlugin::default(),
             //FrameTimeDiagnosticsPlugin::default(), // to display fps in console
             bevy_framepace::FramepacePlugin,
@@ -75,6 +86,7 @@ fn main() {
             Update,
             (greet, rotator_system).run_if(in_state(AppState::Running)),
         )
+        .add_plugins(Material2dPlugin::<CustomMaterial>::default())
         .add_systems(Update, imgui_example_ui.run_if(in_state(AppState::Running)));
 
     app.run();
@@ -117,14 +129,11 @@ struct Immortal;
 
 /// Code that is actually! run once on startup of your program
 /// You can spawn entities with the Immortal component (above) here and they will not be removed when restarting
-fn spawn_immortals(
-    mut settings: ResMut<bevy_framepace::FramepaceSettings>,
-) {
+fn spawn_immortals(mut settings: ResMut<bevy_framepace::FramepaceSettings>) {
     println!("immortal");
     use bevy_framepace::Limiter;
     settings.limiter = Limiter::from_framerate(30.0);
 }
-
 
 fn get_component_names(world: &World, entity: Entity) -> Option<Vec<String>> {
     world
@@ -142,11 +151,16 @@ fn get_component_names(world: &World, entity: Entity) -> Option<Vec<String>> {
 /// We also don't despawn the "immortals"
 fn teardown(
     mut commands: Commands,
-    query: Query<Entity, (Without<bevy::window::PrimaryWindow>,
-        Without<bevy::picking::pointer::PointerInteraction>,
-        Without<bevy::ecs::observer::Observer>,
-        Without<bevy::window::Monitor>,
-        Without<Immortal>)>,
+    query: Query<
+        Entity,
+        (
+            Without<bevy::window::PrimaryWindow>,
+            Without<bevy::picking::pointer::PointerInteraction>,
+            Without<bevy::ecs::observer::Observer>,
+            Without<bevy::window::Monitor>,
+            Without<Immortal>,
+        ),
+    >,
 ) {
     // if you want to see what components that entities about to be despawned have
 
@@ -183,8 +197,9 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut colormaterials: ResMut<Assets<ColorMaterial>>,
     mut images: ResMut<Assets<Image>>,
+    mut shadermaterials: ResMut<Assets<CustomMaterial>>,
+    asset_server: Res<AssetServer>,
 ) {
-
     println!("setup!");
 
     // rendered texture
@@ -213,32 +228,32 @@ fn setup(
     let first_pass_layer = RenderLayers::layer(1);
 
     //first pass circle mesh
-    let circlemesh = meshes.add(Circle::new(50.0));
-    commands
-        .spawn((
-            Mesh2d(circlemesh),
-            MeshMaterial2d(colormaterials.add(Color::srgb(0.0, 1.0, 0.0))),
-            Transform::from_translation(Vec3::new(0.0, 0.0, 1.0)),
-            FirstPassEntity,
-            first_pass_layer.clone(),
-        ));
+    //let circlemesh = meshes.add(Circle::new(200.0));
+    commands.spawn((
+        Mesh2d(meshes.add(Rectangle::default())),
+        //MeshMaterial2d(colormaterials.add(Color::srgb(0.0, 1.0, 0.0))),
+        MeshMaterial2d(shadermaterials.add(CustomMaterial {
+            color: LinearRgba::BLUE,
+        })),
+        Transform::default().with_scale(Vec3::splat(128.)),
+        FirstPassEntity,
+        first_pass_layer.clone(),
+    ));
 
     //first pass camera
-    commands
-        .spawn((
-            Camera2d::default(),
-            Camera {
-                target: image_handle.clone().into(),
-                clear_color: Color::WHITE.into(),
-                ..default()
-            },
-            Transform::from_translation(Vec3::new(0.0, 0.0, 15.0)).looking_at(Vec3::ZERO, Vec3::Y),
-            first_pass_layer,
-        ));
+    commands.spawn((
+        Camera2d::default(),
+        Camera {
+            target: image_handle.clone().into(),
+            clear_color: Color::WHITE.into(),
+            ..default()
+        },
+        Transform::from_translation(Vec3::new(0.0, 0.0, 15.0)).looking_at(Vec3::ZERO, Vec3::Y),
+        first_pass_layer,
+    ));
 
     //Sprite to display the rendered texture
-    commands
-        .spawn(Sprite::from_image(image_handle.clone()));
+    commands.spawn(Sprite::from_image(image_handle.clone()));
 
     // main camera
     commands.spawn(Camera2d);
@@ -273,5 +288,27 @@ fn imgui_example_ui(mut context: NonSendMut<ImguiContext>, mut state: ResMut<Img
 
     if state.demo_window_open {
         ui.show_demo_window(&mut state.demo_window_open);
+    }
+}
+
+// This is the struct that will be passed to your shader
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+struct CustomMaterial {
+    #[uniform(0)]
+    color: LinearRgba,
+}
+
+/// This example uses a shader source file from the assets subdirectory
+const SHADER_ASSET_PATH: &str = "shaders/test_shader_2d.wgsl";
+
+/// The Material2d trait is very configurable, but comes with sensible defaults for all methods.
+/// You only need to implement functions for features that need non-default behavior. See the Material2d api docs for details!
+impl Material2d for CustomMaterial {
+    fn fragment_shader() -> ShaderRef {
+        SHADER_ASSET_PATH.into()
+    }
+
+    fn alpha_mode(&self) -> AlphaMode2d {
+        AlphaMode2d::Mask(0.5)
     }
 }

@@ -3,6 +3,7 @@
 ## Features
 - Dynamically linking the engine (faster compile times, smaller executable)
 - Hot patching using dioxus (You can make and run changes to the code without fully recompiling / restarting the executable)
+- Hot reloading of assets (shaders, images, ...) using bevy's builtin hot reloading system (https://bevy-cheatbook.github.io/assets/hot-reload.html) 
 - Optimized for compile speed (Mold linker, Cranelift codegen, Nightly rust compiler)
 - ImGUI debug UI
 - Release build optimized for size (about 82MB)

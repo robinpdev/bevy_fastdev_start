@@ -3,6 +3,7 @@ use bevy::diagnostic::LogDiagnosticsPlugin;
 
 use bevy_mod_imgui::prelude::*;
 use bevy_simple_subsecond_system::prelude::*;
+use iyes_perf_ui::prelude::*;
 
 use bevy::{
     render::{
@@ -61,10 +62,11 @@ fn main() {
                     watch_for_changes_override: Some(true),
                     ..Default::default()
                 }),
-            LogDiagnosticsPlugin::default(),
-            //FrameTimeDiagnosticsPlugin::default(), // to display fps in console
+            // LogDiagnosticsPlugin::default(),
             bevy_framepace::FramepacePlugin,
         ))
+        .add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin::default())
+        .add_plugins(PerfUiPlugin)
         .edit_schedule(Update, |schedule| {
             schedule.set_executor_kind(ExecutorKind::SingleThreaded);
         })
@@ -146,6 +148,9 @@ fn get_component_names(world: &World, entity: Entity) -> Option<Vec<String>> {
         })
 }
 
+const BOXWIDTH: u32 = 512;
+const BOXHEIGHT: u32 = 512;
+
 /// User-defined teardown code can live here
 /// If you kill all the Windows it will quit the app, so we use Without<PrimaryWindow> here
 /// We also don't despawn the "immortals"
@@ -204,8 +209,8 @@ fn setup(
 
     // rendered texture
     let size = Extent3d {
-        width: 512,
-        height: 512,
+        width: BOXWIDTH,
+        height: BOXHEIGHT,
         ..default()
     };
 
@@ -230,12 +235,12 @@ fn setup(
     //first pass circle mesh
     //let circlemesh = meshes.add(Circle::new(200.0));
     commands.spawn((
-        Mesh2d(meshes.add(Rectangle::default())),
+        Mesh2d(meshes.add(Circle::new(100.0))),
         //MeshMaterial2d(colormaterials.add(Color::srgb(0.0, 1.0, 0.0))),
         MeshMaterial2d(shadermaterials.add(CustomMaterial {
             color: LinearRgba::BLUE,
         })),
-        Transform::default().with_scale(Vec3::splat(128.)),
+        Transform::default(),
         FirstPassEntity,
         first_pass_layer.clone(),
     ));
@@ -257,6 +262,18 @@ fn setup(
 
     // main camera
     commands.spawn(Camera2d);
+
+    // create a simple Perf UI
+    commands.spawn((
+        PerfUiRoot {
+            display_labels: false,
+            layout_horizontal: true,
+            values_col_width: 32.0,
+            ..default()
+        },
+        PerfUiEntryFPSWorst::default(),
+        PerfUiEntryFPS::default(),
+    ));
 }
 
 /// Rotates the inner cube (first pass)

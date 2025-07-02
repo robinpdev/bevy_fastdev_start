@@ -1,6 +1,7 @@
 use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 use bevy::diagnostic::LogDiagnosticsPlugin;
 
+use bevy::transform;
 use bevy_mod_imgui::prelude::*;
 use bevy_simple_subsecond_system::prelude::*;
 use iyes_perf_ui::prelude::*;
@@ -148,8 +149,8 @@ fn get_component_names(world: &World, entity: Entity) -> Option<Vec<String>> {
         })
 }
 
-const BOXWIDTH: u32 = 512;
-const BOXHEIGHT: u32 = 512;
+const BOXWIDTH: f32 = 700.0;
+const BOXHEIGHT: f32 = 512.0;
 
 /// User-defined teardown code can live here
 /// If you kill all the Windows it will quit the app, so we use Without<PrimaryWindow> here
@@ -194,6 +195,8 @@ fn greet(time: Res<Time>) {
     );
 }
 
+const RADIUS: f32 = 100.0;
+
 /// Runs each time the scene is (re)started
 /// Sets up a circle that gets rendered to a texture and then shown on the main context
 #[hot]
@@ -209,8 +212,8 @@ fn setup(
 
     // rendered texture
     let size = Extent3d {
-        width: BOXWIDTH,
-        height: BOXHEIGHT,
+        width: BOXWIDTH as u32,
+        height: BOXHEIGHT as u32,
         ..default()
     };
 
@@ -235,12 +238,14 @@ fn setup(
     //first pass circle mesh
     //let circlemesh = meshes.add(Circle::new(200.0));
     commands.spawn((
-        Mesh2d(meshes.add(Circle::new(100.0))),
+        Mesh2d(meshes.add(Circle::new(RADIUS))),
         //MeshMaterial2d(colormaterials.add(Color::srgb(0.0, 1.0, 0.0))),
         MeshMaterial2d(shadermaterials.add(CustomMaterial {
             color: LinearRgba::BLUE,
         })),
         Transform::default(),
+        HDirection::Right,
+        VDirection::Up,
         FirstPassEntity,
         first_pass_layer.clone(),
     ));
@@ -276,12 +281,44 @@ fn setup(
     ));
 }
 
+#[derive(Component)]
+enum HDirection {
+    Left,
+    Right,
+}
+
+#[derive(Component)]
+enum VDirection {
+    Up,
+    Down,
+}
+
+const SPEED : f32 = 10.0;
+
 /// Rotates the inner cube (first pass)
 #[hot]
-fn rotator_system(time: Res<Time>, mut query: Query<&mut Transform, With<FirstPassEntity>>) {
-    for mut transform in &mut query {
-        transform.rotate_x(1.5 * time.delta_secs());
-        transform.rotate_z(0.4 * time.delta_secs());
+fn rotator_system(time: Res<Time>, mut query: Query<(&mut Transform, &mut VDirection, &mut HDirection)>) {
+    // for mut transform in &mut query {
+    //     transform.rotate_x(1.5 * time.delta_secs());
+    //     transform.rotate_z(0.4 * time.delta_secs());
+    // }
+
+    for (mut pos, mut vdir, mut hdir) in &mut query {
+        match *vdir{
+            VDirection::Up => pos.translation.y += SPEED,
+            VDirection::Down => pos.translation.y -= SPEED
+        }
+
+        match *hdir{
+            HDirection::Left => pos.translation.x -= SPEED,
+            HDirection::Right => pos.translation.x += SPEED
+        }
+
+        if pos.translation.x + RADIUS > BOXWIDTH / 2 as f32{ *hdir = HDirection::Left }
+        else if pos.translation.x - RADIUS < -BOXWIDTH / 2 as f32{ *hdir = HDirection::Right }
+
+        if pos.translation.y + RADIUS > BOXHEIGHT / 2 as f32{ *vdir = VDirection::Down }
+        else if pos.translation.y - RADIUS < -BOXHEIGHT / 2 as f32{ *vdir = VDirection::Up }
     }
 }
 

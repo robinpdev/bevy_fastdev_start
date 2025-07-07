@@ -30,20 +30,20 @@ features = [
   "bevy_state",
   "bevy_text",
   "bevy_window",
-  "std",
-  "async_executor",
-  "multi_threaded",
+  # "std",
+  # "async_executor",
+  # "multi_threaded",
   "sysinfo_plugin",
   "custom_cursor",
   "x11",
   "tonemapping_luts",
-  "async-io",
+  # "async-io",
   "serialize",
   "reflect_documentation",
   "reflect_functions",
   "wayland",
   "spirv_shader_passthrough",
-  "webgpu",
+  # "webgpu",
   "default_no_std",
   "experimental_pbr_pcss",
   "meshlet",
@@ -57,8 +57,10 @@ features = [
   "trace",
   "dynamic_linking",
   "png",
-  "file_watcher", # Asset hot-reloading
-  "default_font"
+  # "file_watcher", # Asset hot-reloading
+  "default_font",
+  "webgl2",
+
 ]
 
 # Enable max optimizations for dependencies, but not for our code:

@@ -33,16 +33,16 @@ fn main() {
                         title: "I am the window!".into(),
                         name: Some("bevy.app".into()),
                         resolution: (500., 300.).into(),
-                        present_mode: PresentMode::AutoNoVsync,
+                        // present_mode: PresentMode::AutoNoVsync,
                         // Tells Wasm to resize the window according to the available canvas
                         fit_canvas_to_parent: true,
                         // Tells Wasm not to override default event handling, like F5, Ctrl+R etc.
                         prevent_default_event_handling: false,
-                        window_theme: Some(WindowTheme::Dark),
-                        enabled_buttons: bevy::window::EnabledButtons {
-                            maximize: false,
-                            ..Default::default()
-                        },
+                        // window_theme: Some(WindowTheme::Dark),
+                        // enabled_buttons: bevy::window::EnabledButtons {
+                        //     maximize: false,
+                        //     ..Default::default()
+                        // },
                         // This will spawn an invisible window
                         // The window will be made visible in the make_visible() system after 3 frames.
                         // This is useful when you want to avoid the white window that shows up before the GPU is ready to render the app.
@@ -50,11 +50,11 @@ fn main() {
                         ..default()
                     }),
                     ..default()
-                })
-                .set(AssetPlugin {
-                    watch_for_changes_override: Some(true),
-                    ..Default::default()
                 }),
+                // .set(AssetPlugin {
+                //     watch_for_changes_override: Some(true),
+                //     ..Default::default()
+                // }),
             // LogDiagnosticsPlugin::default(),
             bevy_framepace::FramepacePlugin,
         ))
@@ -74,7 +74,7 @@ fn main() {
         //     ..default()
         // })
         .add_plugins(EguiPlugin::default())
-        .add_plugins(SimpleSubsecondPlugin::default())
+        // .add_plugins(SimpleSubsecondPlugin::default())
         .add_systems(
             Update,
             (greet, rotator_system).run_if(in_state(AppState::Running)),

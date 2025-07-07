@@ -1,8 +1,8 @@
-use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
-use bevy::diagnostic::LogDiagnosticsPlugin;
-
-use bevy::transform;
-use bevy_mod_imgui::prelude::*;
+// use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
+// use bevy::diagnostic::LogDiagnosticsPlugin;
+use bevy_egui::{
+    EguiContextSettings, EguiContexts, EguiPlugin, EguiPrimaryContextPass, EguiStartupSet, egui,
+};
 use bevy_simple_subsecond_system::prelude::*;
 use iyes_perf_ui::prelude::*;
 
@@ -23,17 +23,9 @@ use bevy::{
     sprite::{AlphaMode2d, Material2d, Material2dPlugin},
 };
 
-#[derive(Resource)]
-struct ImguiState {
-    demo_window_open: bool,
-}
-
 fn main() {
     let mut app = App::new();
     app.insert_resource(ClearColor(Color::srgba(0.2, 0.2, 0.2, 1.0)))
-        .insert_resource(ImguiState {
-            demo_window_open: true,
-        })
         .add_plugins((
             DefaultPlugins
                 .set(WindowPlugin {
@@ -72,27 +64,36 @@ fn main() {
             schedule.set_executor_kind(ExecutorKind::SingleThreaded);
         })
         .init_state::<AppState>()
-        .add_systems(Startup, restart)
-        .add_systems(PreUpdate, trigger_restart)
-        .add_systems(PreStartup, spawn_immortals)
         .add_systems(OnEnter(AppState::Restarting), restart)
         .add_systems(OnEnter(AppState::Running), setup)
         .add_systems(OnExit(AppState::Running), teardown)
-        .add_plugins(bevy_mod_imgui::ImguiPlugin {
-            ini_filename: Some("hello-world.ini".into()),
-            font_oversample_h: 2,
-            font_oversample_v: 2,
-            ..default()
-        })
+        // .add_plugins(bevy_mod_imgui::ImguiPlugin {
+        //     ini_filename: Some("hello-world.ini".into()),
+        //     font_oversample_h: 2,
+        //     font_oversample_v: 2,
+        //     ..default()
+        // })
+        .add_plugins(EguiPlugin::default())
         .add_plugins(SimpleSubsecondPlugin::default())
         .add_systems(
             Update,
             (greet, rotator_system).run_if(in_state(AppState::Running)),
         )
         .add_plugins(Material2dPlugin::<CustomMaterial>::default())
-        .add_systems(Update, imgui_example_ui.run_if(in_state(AppState::Running)));
+        .add_systems(Startup, restart)
+        .add_systems(PreUpdate, trigger_restart)
+        .add_systems(PreStartup, spawn_immortals)
+        .add_systems(EguiPrimaryContextPass, ui_example_system);
 
     app.run();
+}
+
+#[hot]
+fn ui_example_system(mut contexts: EguiContexts) -> Result {
+    egui::Window::new("Hello").show(contexts.ctx_mut()?, |ui| {
+        ui.label("world");
+    });
+    Ok(())
 }
 
 #[derive(Component)]
@@ -210,6 +211,9 @@ fn setup(
 ) {
     println!("setup!");
 
+    // main camera
+    commands.spawn(Camera2d);
+
     // rendered texture
     let size = Extent3d {
         width: BOXWIDTH as u32,
@@ -265,9 +269,6 @@ fn setup(
     //Sprite to display the rendered texture
     commands.spawn(Sprite::from_image(image_handle.clone()));
 
-    // main camera
-    commands.spawn(Camera2d);
-
     // create a simple Perf UI
     commands.spawn((
         PerfUiRoot {
@@ -293,57 +294,66 @@ enum VDirection {
     Down,
 }
 
-const SPEED : f32 = 10.0;
+const SPEED: f32 = 10.0;
 
 /// Rotates the inner cube (first pass)
 #[hot]
-fn rotator_system(time: Res<Time>, mut query: Query<(&mut Transform, &mut VDirection, &mut HDirection)>) {
+fn rotator_system(
+    time: Res<Time>,
+    mut query: Query<(&mut Transform, &mut VDirection, &mut HDirection)>,
+) {
     // for mut transform in &mut query {
     //     transform.rotate_x(1.5 * time.delta_secs());
     //     transform.rotate_z(0.4 * time.delta_secs());
     // }
 
     for (mut pos, mut vdir, mut hdir) in &mut query {
-        match *vdir{
+        match *vdir {
             VDirection::Up => pos.translation.y += SPEED,
-            VDirection::Down => pos.translation.y -= SPEED
+            VDirection::Down => pos.translation.y -= SPEED,
         }
 
-        match *hdir{
+        match *hdir {
             HDirection::Left => pos.translation.x -= SPEED,
-            HDirection::Right => pos.translation.x += SPEED
+            HDirection::Right => pos.translation.x += SPEED,
         }
 
-        if pos.translation.x + RADIUS > BOXWIDTH / 2 as f32{ *hdir = HDirection::Left }
-        else if pos.translation.x - RADIUS < -BOXWIDTH / 2 as f32{ *hdir = HDirection::Right }
+        if pos.translation.x + RADIUS > BOXWIDTH / 2 as f32 {
+            *hdir = HDirection::Left
+        } else if pos.translation.x - RADIUS < -BOXWIDTH / 2 as f32 {
+            *hdir = HDirection::Right
+        }
 
-        if pos.translation.y + RADIUS > BOXHEIGHT / 2 as f32{ *vdir = VDirection::Down }
-        else if pos.translation.y - RADIUS < -BOXHEIGHT / 2 as f32{ *vdir = VDirection::Up }
+        if pos.translation.y + RADIUS > BOXHEIGHT / 2 as f32 {
+            *vdir = VDirection::Down
+        } else if pos.translation.y - RADIUS < -BOXHEIGHT / 2 as f32 {
+            *vdir = VDirection::Up
+        }
     }
 }
 
-fn imgui_example_ui(mut context: NonSendMut<ImguiContext>, mut state: ResMut<ImguiState>) {
-    let ui = context.ui();
-    let window = ui.window("Hello mf world");
-    window
-        .size([300.0, 100.0], imgui::Condition::FirstUseEver)
-        .position([0.0, 0.0], imgui::Condition::FirstUseEver)
-        .build(|| {
-            ui.text("Hello mf  world!");
-            ui.text("This...is...test eeny meeny minie moeshi bevy_mod_imgui!");
-            ui.text("ayo");
-            ui.separator();
-            let mouse_pos = ui.io().mouse_pos;
-            ui.text(format!(
-                "Mouse Position why it get bigger?: ({:.1},{:.1})",
-                mouse_pos[0], mouse_pos[1]
-            ));
-        });
+// fn imgui_example_ui(mut context: NonSendMut<ImguiContext>, mut state: ResMut<ImguiState>) {
+//     let ui = context.ui();
+//     let window = ui.window("Hello mf world");
+//     window
+//         .size([300.0, 100.0], imgui::Condition::FirstUseEver)
+//         .position([0.0, 0.0], imgui::Condition::FirstUseEver)
+//         .build(|| {
+//             ui.text("Hello mf  world!");
+//             ui.text("This...is...test eeny meeny minie moeshi bevy_mod_imgui!");
+//             ui.text("ayo");
+//             ui.separator();
+//             let mouse_pos = ui.io().mouse_pos;
+//             ui.text(format!(
+//                 "Mouse Position why it get bigger?: ({:.1},{:.1})",
+//                 mouse_pos[0], mouse_pos[1]
+//             ));
+//         });
 
-    if state.demo_window_open {
-        ui.show_demo_window(&mut state.demo_window_open);
-    }
-}
+//     if state.demo_window_open {
+//         ui.show_demo_window(&mut state.demo_window_open);
+//     }
+// }
 
 // This is the struct that will be passed to your shader
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
@@ -366,3 +376,4 @@ impl Material2d for CustomMaterial {
         AlphaMode2d::Mask(0.5)
     }
 }
+

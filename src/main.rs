@@ -1,8 +1,11 @@
+mod common;
+mod ui;
+
+use common::*;
+
 // use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 // use bevy::diagnostic::LogDiagnosticsPlugin;
-use bevy_egui::{
-    EguiContextSettings, EguiContexts, EguiPlugin, EguiPrimaryContextPass, EguiStartupSet, egui,
-};
+
 use bevy_simple_subsecond_system::prelude::*;
 use iyes_perf_ui::prelude::*;
 
@@ -73,7 +76,6 @@ fn main() {
         //     font_oversample_v: 2,
         //     ..default()
         // })
-        .add_plugins(EguiPlugin::default())
         .add_plugins(SimpleSubsecondPlugin::default())
         .add_systems(
             Update,
@@ -83,18 +85,13 @@ fn main() {
         .add_systems(Startup, restart)
         .add_systems(PreUpdate, trigger_restart)
         .add_systems(PreStartup, spawn_immortals)
-        .add_systems(EguiPrimaryContextPass, ui_example_system);
+        .add_plugins(ui::BumpUiPlugin);
 
     app.run();
 }
 
 
 
-#[derive(Component)]
-struct FirstPassEntity;
-
-#[derive(Component)]
-struct ModuleWin;
 
 /// Boilerplate for setting up a basic restarting architecture:
 /// The two states (Re)starting and Running
@@ -124,9 +121,7 @@ fn trigger_restart(input: Res<ButtonInput<KeyCode>>, mut next_state: ResMut<Next
     }
 }
 
-/// Marker component for things we spawn once and never despawn
-#[derive(Component)]
-struct Immortal;
+
 
 /// Code that is actually! run once on startup of your program
 /// You can spawn entities with the Immortal component (above) here and they will not be removed when restarting
@@ -147,8 +142,7 @@ fn get_component_names(world: &World, entity: Entity) -> Option<Vec<String>> {
         })
 }
 
-const BOXWIDTH: f32 = 700.0;
-const BOXHEIGHT: f32 = 512.0;
+
 
 /// User-defined teardown code can live here
 /// If you kill all the Windows it will quit the app, so we use Without<PrimaryWindow> here
@@ -193,7 +187,7 @@ fn greet(time: Res<Time>) {
     );
 }
 
-const RADIUS: f32 = 100.0;
+
 
 /// Runs each time the scene is (re)started
 /// Sets up a circle that gets rendered to a texture and then shown on the main context
@@ -279,19 +273,7 @@ fn setup(
     ));
 }
 
-#[derive(Component)]
-enum HDirection {
-    Left,
-    Right,
-}
 
-#[derive(Component)]
-enum VDirection {
-    Up,
-    Down,
-}
-
-const SPEED: f32 = 10.0;
 
 /// Rotates the inner cube (first pass)
 #[hot]
@@ -329,33 +311,7 @@ fn rotator_system(
     }
 }
 
-#[hot]
-fn ui_example_system(mut contexts: EguiContexts, mut query: Query<&mut Transform, With<ModuleWin>>) -> Result {
-    egui::Window::new("Hello").show(contexts.ctx_mut()?, |ui| {
-        ui.label("world");
-    });
 
-    for(mut tf) in query{
-        let window = egui::Window::new("module")
-        .pivot(egui::Align2::CENTER_CENTER)
-        .min_width(BOXWIDTH)
-        .min_height(BOXHEIGHT)
-        .default_size([BOXWIDTH, BOXHEIGHT]) 
-        .frame(egui::Frame::default().fill(egui::Color32::TRANSPARENT))
-        .show(contexts.ctx_mut()?, |ui| {
-            ui.label("yo");
-            ui.allocate_space(ui.available_size());
-        });
-
-        // Get the current position after the window has been shown and potentially moved
-        let response = window.and_then(|r| Some(r.response)).unwrap();
-        
-        tf.translation.x = response.rect.min.x - BOXWIDTH / 2.5;
-        tf.translation.y = -response.rect.min.y + BOXHEIGHT / 6.0;
-    }
-
-    Ok(())
-}
 
 // fn imgui_example_ui(mut context: NonSendMut<ImguiContext>, mut state: ResMut<ImguiState>) {
 //     let ui = context.ui();

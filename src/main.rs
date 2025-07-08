@@ -74,7 +74,7 @@ fn main() {
         //     ..default()
         // })
         .add_plugins(EguiPlugin::default())
-        // .add_plugins(SimpleSubsecondPlugin::default())
+        .add_plugins(SimpleSubsecondPlugin::default())
         .add_systems(
             Update,
             (greet, rotator_system).run_if(in_state(AppState::Running)),
@@ -88,16 +88,13 @@ fn main() {
     app.run();
 }
 
-#[hot]
-fn ui_example_system(mut contexts: EguiContexts) -> Result {
-    egui::Window::new("Hello").show(contexts.ctx_mut()?, |ui| {
-        ui.label("world");
-    });
-    Ok(())
-}
+
 
 #[derive(Component)]
 struct FirstPassEntity;
+
+#[derive(Component)]
+struct ModuleWin;
 
 /// Boilerplate for setting up a basic restarting architecture:
 /// The two states (Re)starting and Running
@@ -267,7 +264,7 @@ fn setup(
     ));
 
     //Sprite to display the rendered texture
-    commands.spawn(Sprite::from_image(image_handle.clone()));
+    commands.spawn((Sprite::from_image(image_handle.clone()), ModuleWin));
 
     // create a simple Perf UI
     commands.spawn((
@@ -330,6 +327,34 @@ fn rotator_system(
             *vdir = VDirection::Up
         }
     }
+}
+
+#[hot]
+fn ui_example_system(mut contexts: EguiContexts, mut query: Query<&mut Transform, With<ModuleWin>>) -> Result {
+    egui::Window::new("Hello").show(contexts.ctx_mut()?, |ui| {
+        ui.label("world");
+    });
+
+    for(mut tf) in query{
+        let window = egui::Window::new("module")
+        .pivot(egui::Align2::CENTER_CENTER)
+        .min_width(BOXWIDTH)
+        .min_height(BOXHEIGHT)
+        .default_size([BOXWIDTH, BOXHEIGHT]) 
+        .frame(egui::Frame::default().fill(egui::Color32::TRANSPARENT))
+        .show(contexts.ctx_mut()?, |ui| {
+            ui.label("yo");
+            ui.allocate_space(ui.available_size());
+        });
+
+        // Get the current position after the window has been shown and potentially moved
+        let response = window.and_then(|r| Some(r.response)).unwrap();
+        
+        tf.translation.x = response.rect.min.x - BOXWIDTH / 2.5;
+        tf.translation.y = -response.rect.min.y + BOXHEIGHT / 6.0;
+    }
+
+    Ok(())
 }
 
 // fn imgui_example_ui(mut context: NonSendMut<ImguiContext>, mut state: ResMut<ImguiState>) {

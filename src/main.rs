@@ -28,9 +28,8 @@ use bevy::{
 
 fn main() {
     let mut app = App::new();
-    app.insert_resource(ClearColor(Color::srgba(0.2, 0.2, 0.2, 1.0)))
-        .add_plugins((
-            DefaultPlugins
+
+    let mut defaultPlugins = DefaultPlugins
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         title: "I am the window!".into(),
@@ -53,39 +52,45 @@ fn main() {
                         ..default()
                     }),
                     ..default()
-                }),
-                // .set(AssetPlugin {
-                //     watch_for_changes_override: Some(true),
-                //     ..Default::default()
-                // }),
+                });
+    
+    // Conditionally add the AssetPlugin for Linux
+    #[cfg(all(target_os = "linux"))]
+    {
+        defaultPlugins = defaultPlugins
+            .set(AssetPlugin {
+                watch_for_changes_override: Some(true),
+                ..Default::default()
+            });
+    }
+
+    app.insert_resource(ClearColor(Color::srgba(0.2, 0.2, 0.2, 1.0)))
+        .add_plugins((
+            defaultPlugins,
             // LogDiagnosticsPlugin::default(),
             bevy_framepace::FramepacePlugin,
         ))
         .add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin::default())
         .add_plugins(PerfUiPlugin)
-        .edit_schedule(Update, |schedule| {
-            schedule.set_executor_kind(ExecutorKind::SingleThreaded);
-        })
+        .add_plugins(SimpleSubsecondPlugin::default())
+        .add_plugins(Material2dPlugin::<CustomMaterial>::default())
+        // .edit_schedule(Update, |schedule| {
+        //     schedule.set_executor_kind(ExecutorKind::SingleThreaded);
+        // })
         .init_state::<AppState>()
+        .add_systems(Startup, restart)
         .add_systems(OnEnter(AppState::Restarting), restart)
         .add_systems(OnEnter(AppState::Running), setup)
         .add_systems(OnExit(AppState::Running), teardown)
-        // .add_plugins(bevy_mod_imgui::ImguiPlugin {
-        //     ini_filename: Some("hello-world.ini".into()),
-        //     font_oversample_h: 2,
-        //     font_oversample_v: 2,
-        //     ..default()
-        // })
-        .add_plugins(SimpleSubsecondPlugin::default())
+        .add_systems(PreUpdate, trigger_restart)
+        .add_systems(PreStartup, spawn_immortals)
         .add_systems(
             Update,
             (greet, rotator_system).run_if(in_state(AppState::Running)),
         )
-        .add_plugins(Material2dPlugin::<CustomMaterial>::default())
-        .add_systems(Startup, restart)
-        .add_systems(PreUpdate, trigger_restart)
-        .add_systems(PreStartup, spawn_immortals)
         .add_plugins(ui::BumpUiPlugin);
+
+
 
     app.run();
 }

@@ -22,17 +22,23 @@ impl Plugin for BumpUiPlugin {
 }
 
 #[hot]
-fn ui_example_system(mut contexts: EguiContexts, mut query: Query<&mut Transform, With<ModuleWin>>) -> Result {
+fn ui_example_system(
+    mut contexts: EguiContexts,
+    query: Query<&mut Transform, With<ModuleWin>>,
+    windows: Query<&mut Window>,
+    ) -> Result {
+    let mw = windows.single().unwrap();
     egui::Window::new("Hello").show(contexts.ctx_mut()?, |ui| {
         ui.label("world");
     });
 
     for(mut tf) in query{
         let window = egui::Window::new("module")
-        .pivot(egui::Align2::CENTER_CENTER)
+        .pivot(egui::Align2::LEFT_TOP)
         .min_width(BOXWIDTH)
         .min_height(BOXHEIGHT)
         .default_size([BOXWIDTH, BOXHEIGHT]) 
+        .constrain(false)
         .frame(egui::Frame::default().fill(egui::Color32::TRANSPARENT))
         .show(contexts.ctx_mut()?, |ui| {
             ui.label("yo");
@@ -42,8 +48,8 @@ fn ui_example_system(mut contexts: EguiContexts, mut query: Query<&mut Transform
         // Get the current position after the window has been shown and potentially moved
         let response = window.and_then(|r| Some(r.response)).unwrap();
         
-        tf.translation.x = response.rect.min.x - BOXWIDTH / 2.1;
-        tf.translation.y = -response.rect.min.y + BOXHEIGHT / 2.9;
+        tf.translation.x = response.rect.min.x - BOXWIDTH / 9.4;
+        tf.translation.y = -response.rect.min.y - BOXHEIGHT / 18.4;
     }
 
     Ok(())

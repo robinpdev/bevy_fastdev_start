@@ -1,0 +1,4 @@
+mode = "Windowed"
+resolution = [1280, 697]
+scale = 1.5
+auto_scaled = true

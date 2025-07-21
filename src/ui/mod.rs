@@ -35,8 +35,8 @@ fn ui_example_system(
     for(mut tf) in query{
         let window = egui::Window::new("module")
         .pivot(egui::Align2::LEFT_TOP)
-        .min_width(BOXWIDTH)
-        .min_height(BOXHEIGHT)
+        .min_width(40.0)
+        .min_height(40.0)
         .default_size([BOXWIDTH, BOXHEIGHT]) 
         .constrain(false)
         .frame(egui::Frame::default().fill(egui::Color32::TRANSPARENT))
@@ -48,8 +48,10 @@ fn ui_example_system(
         // Get the current position after the window has been shown and potentially moved
         let response = window.and_then(|r| Some(r.response)).unwrap();
         
-        tf.translation.x = response.rect.min.x - BOXWIDTH / 9.4;
-        tf.translation.y = -response.rect.min.y - BOXHEIGHT / 18.4;
+        tf.translation.x = response.rect.center().x - mw.resolution.width() / 2.0;
+        tf.translation.y = -response.rect.center().y + mw.resolution.height() / 2.0;
+        tf.scale.x = response.rect.size().x / BOXWIDTH;
+        tf.scale.y = response.rect.size().y / BOXHEIGHT;
     }
 
     Ok(())

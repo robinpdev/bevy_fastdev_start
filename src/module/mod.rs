@@ -69,7 +69,7 @@ fn setup(
         Mesh2d(meshes.add(Circle::new(RADIUS))),
         //MeshMaterial2d(colormaterials.add(Color::srgb(0.0, 1.0, 0.0))),
         MeshMaterial2d(shadermaterials.add(CustomMaterial {
-            color: LinearRgba::BLUE,
+            color: LinearRgba::RED,
         })),
         Transform::default(),
         HDirection::Right,

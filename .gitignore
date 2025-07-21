@@ -1,3 +1,4 @@
 /target
 *.ini
 out
+primary-window.toml

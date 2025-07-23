@@ -1,12 +1,10 @@
+use bevy::image::*;
 use bevy::prelude::*;
 
-use bevy::{
-    reflect::TypePath,
-    render::render_resource::{AsBindGroup},
-};
+use bevy::{reflect::TypePath, render::render_resource::AsBindGroup};
 
 use bevy::{
-    render::render_resource::{ShaderRef},
+    render::render_resource::ShaderRef,
     sprite::{AlphaMode2d, Material2d},
 };
 
@@ -32,12 +30,13 @@ pub const BOXHEIGHT: f32 = 512.0;
 #[derive(Component)]
 pub struct Immortal;
 
-
 #[derive(Component)]
 pub struct FirstPassEntity;
 
 #[derive(Component)]
-pub struct ModuleWin;
+pub struct ModuleWin {
+    pub image_h: Handle<Image>,
+}
 
 /// Boilerplate for setting up a basic restarting architecture:
 /// The two states (Re)starting and Running

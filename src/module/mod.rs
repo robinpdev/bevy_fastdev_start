@@ -1,6 +1,6 @@
 use crate::common::*;
 
-use bevy::prelude::*;
+use bevy::{image, prelude::*};
 use bevy_egui::{
     EguiContextSettings, EguiContexts, EguiPlugin, EguiPrimaryContextPass, EguiStartupSet, egui,
 };
@@ -91,7 +91,7 @@ fn setup(
     ));
 
     //Sprite to display the rendered texture
-    commands.spawn((Sprite::from_image(image_handle.clone()), ModuleWin));
+    commands.spawn((Sprite::from_image(image_handle.clone()), ModuleWin{ image_h: image_handle.clone() }));
 }
 
 

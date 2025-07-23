@@ -21,10 +21,30 @@ use std::path::Path;
 fn main() {
     let mut bevyapp = App::new();
 
-    let mut default_plugins = DefaultPlugins.set(WindowPlugin {
-        primary_window: None,
-        ..default()
-    });
+    let mut default_plugins = DefaultPlugins
+        .set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "I am the window!".into(),
+                name: Some("bevy.app".into()),
+                resolution: (500., 300.).into(),
+                // present_mode: PresentMode::AutoNoVsync,
+                // Tells Wasm to resize the window according to the available canvas
+                fit_canvas_to_parent: true,
+                // Tells Wasm not to override default event handling, like F5, Ctrl+R etc.
+                prevent_default_event_handling: false,
+                // window_theme: Some(WindowTheme::Dark),
+                // enabled_buttons: bevy::window::EnabledButtons {
+                //     maximize: false,
+                //     ..Default::default()
+                // },
+                // This will spawn an invisible window
+                // The window will be made visible in the make_visible() system after 3 frames.
+                // This is useful when you want to avoid the white window that shows up before the GPU is ready to render the app.
+                visible: true,
+                ..default()
+            }),
+            ..default()
+        });
 
     // Conditionally add the AssetPlugin for Linux
     #[cfg(all(target_os = "linux"))]
@@ -36,38 +56,15 @@ fn main() {
         });
     }
 
-    bevyapp.add_plugins(default_plugins.build());
-
-    bevyapp.world_mut().spawn((
-        PrimaryWindow,
-        PersistentWindowBundle {
-            window: Window {
-                title: "I am the primary window!".to_owned(),
-                ..Default::default()
-            },
-            state: Persistent::<WindowState>::builder()
-                .name("primary window state")
-                .format(StorageFormat::Toml)
-                .path("./primary-window.toml")
-                .default(WindowState::windowed(1280, 720))
-                .revertible(true)
-                .revert_to_default_on_deserialization_errors(true)
-                .build()
-                .expect("failed to create the persistent primary window state"),
-        },
-    ));
-
     bevyapp
         .insert_resource(ClearColor(Color::srgba(0.2, 0.2, 0.2, 1.0)))
         .add_plugins((
-            // default_plugins,
+            default_plugins,
             // LogDiagnosticsPlugin::default(),
             bevy_framepace::FramepacePlugin,
         ))
         .add_plugins(PersistentWindowsPlugin)
         .add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin::default())
-        .add_plugins(PerfUiPlugin)
-        .add_plugins(ui::BumpUiPlugin)
         .add_plugins(SimpleSubsecondPlugin::default())
         .add_plugins(Material2dPlugin::<CustomMaterial>::default())
         // .edit_schedule(Update, |schedule| {
@@ -80,7 +77,9 @@ fn main() {
         .add_systems(OnExit(AppState::Running), teardown)
         .add_systems(PreUpdate, trigger_restart)
         .add_systems(PreStartup, spawn_immortals)
-        .add_plugins(module::PongModulePlugin);
+        .add_plugins(module::PongModulePlugin)
+        .add_plugins(PerfUiPlugin)
+        .add_plugins(ui::BumpUiPlugin);
 
     bevyapp.run();
 }
@@ -110,10 +109,16 @@ fn trigger_restart(
 
 /// Code that is actually! run once on startup of your program
 /// You can spawn entities with the Immortal component (above) here and they will not be removed when restarting
-fn spawn_immortals(mut settings: ResMut<bevy_framepace::FramepaceSettings>) {
+fn spawn_immortals(
+    mut settings: ResMut<bevy_framepace::FramepaceSettings>,
+    mut commands: Commands,
+) {
     println!("immortal");
     use bevy_framepace::Limiter;
     settings.limiter = Limiter::from_framerate(30.0);
+
+    // main camera
+    commands.spawn((Camera2d, Immortal));
 }
 
 fn get_component_names(world: &World, entity: Entity) -> Option<Vec<String>> {
@@ -170,9 +175,6 @@ fn teardown(
 #[hot]
 fn setup(mut commands: Commands, mut next_state: ResMut<NextState<AppState>>) {
     println!("setup!");
-
-    // main camera
-    commands.spawn(Camera2d);
 
     // create a simple Perf UI
     commands.spawn((

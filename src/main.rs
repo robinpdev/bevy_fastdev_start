@@ -2,6 +2,7 @@ mod common;
 mod module;
 mod ui;
 
+use bevy_egui::EguiContext;
 use common::*;
 
 // use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
@@ -139,19 +140,22 @@ fn teardown(
             Without<bevy::ecs::observer::Observer>,
             Without<bevy::window::Monitor>,
             Without<Immortal>,
+            Without<ComputedNode>,
+            Without<EguiContext>,
         ),
     >,
+    world: &World
 ) {
     // if you want to see what components that entities about to be despawned have
 
-    // for entity in query.iter() {
-    //     if let Some(component_names) = get_component_names(world, entity) {
-    //         println!("Component names for entity {:?}: {:?}", entity, component_names);
-    //     } else {
-    //         // This branch is now reached if the entity doesn't exist.
-    //         println!("Entity {:?} does not exist.", entity);
-    //     }
-    // }
+    for entity in query.iter() {
+        if let Some(component_names) = get_component_names(world, entity) {
+            println!("Component names for entity {:?}: {:?}", entity, component_names);
+        } else {
+            // This branch is now reached if the entity doesn't exist.
+            println!("Entity {:?} does not exist.", entity);
+        }
+    }
 
     println!("teardown!");
     for entity in query.iter() {

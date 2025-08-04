@@ -55,12 +55,12 @@ fn ui_example_system(
         tf.scale.x = response.rect.size().x / BOXWIDTH;
         tf.scale.y = response.rect.size().y / BOXHEIGHT;
 
-        let Some(image) = assets.get_mut(&mw.image_h) else {continue;};
-        image.resize(Extent3d {
-            width: win.resolution.width() as u32,
-            height: win.resolution.height() as u32,
-            ..default()
-        });
+        // let Some(image) = assets.get_mut(&mw.image_h) else {continue;};
+        // image.resize(Extent3d {
+        //     width: win.resolution.width() as u32,
+        //     height: win.resolution.height() as u32,
+        //     ..default()
+        // });
     }
 
     Ok(())

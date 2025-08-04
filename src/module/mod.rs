@@ -5,6 +5,8 @@ use bevy_egui::{
     EguiContextSettings, EguiContexts, EguiPlugin, EguiPrimaryContextPass, EguiStartupSet, egui,
 };
 use bevy_simple_subsecond_system::prelude::*;
+use bevy::input::common_conditions::*;
+
 
 use bevy::{
     render::{
@@ -24,6 +26,10 @@ impl Plugin for PongModulePlugin {
                 Update,
                 (rotator_system).run_if(in_state(AppState::Running)),
             )
+            .add_systems(Update, (
+                handle_click
+                    .run_if(input_just_pressed(MouseButton::Left)),
+            ))
             ;
     }
 }
@@ -88,12 +94,25 @@ fn setup(
         },
         Transform::from_translation(Vec3::new(0.0, 0.0, 15.0)).looking_at(Vec3::ZERO, Vec3::Y),
         first_pass_layer,
+        ModuleWin{ image_h: image_handle.clone_weak() },
     ));
 
     //Sprite to display the rendered texture
-    commands.spawn((Sprite::from_image(image_handle.clone()), ModuleWin{ image_h: image_handle.clone() }));
+    commands.spawn((Sprite::from_image(image_handle.clone()), ));
 }
 
+
+fn handle_click(mut camwin: Query<(&mut Camera2d, &mut ModuleWin)>, mut assets: ResMut<Assets<Image>>){
+    let (cam2, mwin) = camwin.single().unwrap();
+
+    let image = assets.get_mut(mwin.image_h.id()).unwrap();
+    let size = Extent3d {
+        width: 512,
+        height: 712,
+        ..default()
+    };
+    image.resize(size);
+}
 
 
 /// Rotates the inner cube (first pass)

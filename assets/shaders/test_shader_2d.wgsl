@@ -4,7 +4,7 @@
 
 // Adjust these constants to change the pattern's look
 const STARBURST_DENSITY: f32 = 15.0; // How many "points" the starburst has
-const PULSE_SPEED: f32 = 100.0;       // How fast the colors change and pulse
+const PULSE_SPEED: f32 = 40.0;       // How fast the colors change and pulse
 const COLOR_MIX_POWER: f32 = 3.0;   // Controls the intensity of color blending
 
 @group(2) @binding(0) var<uniform> material_color: vec4<f32>;

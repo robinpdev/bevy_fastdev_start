@@ -25,7 +25,7 @@ impl Plugin for BumpUiPlugin {
 #[hot]
 fn ui_example_system(
     mut contexts: EguiContexts,
-    query: Query<(&mut Transform, &mut ModuleWin)>,
+    query: Query<(&mut Transform, &mut ModuleWin, &mut Sprite)>,
     windows: Query<&mut Window>,
     mut assets: ResMut<Assets<Image>>,
 ) -> Result {
@@ -34,7 +34,7 @@ fn ui_example_system(
         ui.label("world");
     });
 
-    for (mut tf, mut mw) in query {
+    for (mut tf, mut mw, mut sprite) in query {
         let window = egui::Window::new("module")
             .pivot(egui::Align2::LEFT_TOP)
             .min_width(40.0)
@@ -49,31 +49,22 @@ fn ui_example_system(
 
         // Get the current position after the window has been shown and potentially moved
         let response = window.and_then(|r| Some(r.response)).unwrap();
-
-        tf.translation.x = response.rect.center().x - win.resolution.width() / 2.0;
-        tf.translation.y = -response.rect.center().y + win.resolution.height() / 2.0;
         let newsize = ((response.rect.size().x) as u32, (response.rect.size().y) as u32);
-        // tf.scale.x = response.rect.size().x / BOXWIDTH;
-        // tf.scale.y = response.rect.size().y / BOXHEIGHT;
-
-
-        
-        
-        if mw.resized && mw.size != newsize {
+        if (sprite.custom_size.unwrap().x as u32, sprite.custom_size.unwrap().y as u32) != newsize {
             // println!("FETCH");
-            mw.size = newsize;
             let image = assets.get_mut(mw.image_h.id()).unwrap();
-            // println!("RESIZE");
+            sprite.custom_size = Some(Vec2 { x: newsize.0 as f32, y: newsize.1 as f32 });
+
             let size = Extent3d {
                 width: newsize.0,
                 height: newsize.1,
                 ..default()
             };
             image.resize(size);
-        }else{
-            
         }
-        mw.resized = true;
+
+        tf.translation.x = response.rect.center().x - win.resolution.width() / 2.0;
+        tf.translation.y = -response.rect.center().y + win.resolution.height() / 2.0;
     }
 
     Ok(())

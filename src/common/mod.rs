@@ -30,14 +30,11 @@ pub const BOXHEIGHT: f32 = 512.0;
 #[derive(Component)]
 pub struct Immortal;
 
-#[derive(Component)]
-pub struct FirstPassEntity;
+
 
 #[derive(Component)]
 pub struct ModuleWin {
-    pub image_h: Handle<Image>,
-    pub resized : bool,
-    pub size: (u32, u32)
+    pub image_h: Handle<Image>
 }
 
 /// Boilerplate for setting up a basic restarting architecture:

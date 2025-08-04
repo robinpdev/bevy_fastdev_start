@@ -25,7 +25,7 @@ impl Plugin for BumpUiPlugin {
 #[hot]
 fn ui_example_system(
     mut contexts: EguiContexts,
-    query: Query<(&mut Transform, &ModuleWin)>,
+    query: Query<(&mut Transform, &mut ModuleWin)>,
     windows: Query<&mut Window>,
     mut assets: ResMut<Assets<Image>>,
 ) -> Result {
@@ -34,7 +34,7 @@ fn ui_example_system(
         ui.label("world");
     });
 
-    for (mut tf, mw) in query {
+    for (mut tf, mut mw) in query {
         let window = egui::Window::new("module")
             .pivot(egui::Align2::LEFT_TOP)
             .min_width(40.0)
@@ -52,15 +52,28 @@ fn ui_example_system(
 
         tf.translation.x = response.rect.center().x - win.resolution.width() / 2.0;
         tf.translation.y = -response.rect.center().y + win.resolution.height() / 2.0;
-        tf.scale.x = response.rect.size().x / BOXWIDTH;
-        tf.scale.y = response.rect.size().y / BOXHEIGHT;
+        let newsize = ((response.rect.size().x) as u32, (response.rect.size().y) as u32);
+        // tf.scale.x = response.rect.size().x / BOXWIDTH;
+        // tf.scale.y = response.rect.size().y / BOXHEIGHT;
 
-        // let Some(image) = assets.get_mut(&mw.image_h) else {continue;};
-        // image.resize(Extent3d {
-        //     width: win.resolution.width() as u32,
-        //     height: win.resolution.height() as u32,
-        //     ..default()
-        // });
+
+        
+        
+        if mw.resized && mw.size != newsize {
+            // println!("FETCH");
+            mw.size = newsize;
+            let image = assets.get_mut(mw.image_h.id()).unwrap();
+            // println!("RESIZE");
+            let size = Extent3d {
+                width: newsize.0,
+                height: newsize.1,
+                ..default()
+            };
+            image.resize(size);
+        }else{
+            
+        }
+        mw.resized = true;
     }
 
     Ok(())

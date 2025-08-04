@@ -36,6 +36,8 @@ pub struct FirstPassEntity;
 #[derive(Component)]
 pub struct ModuleWin {
     pub image_h: Handle<Image>,
+    pub resized : bool,
+    pub size: (u32, u32)
 }
 
 /// Boilerplate for setting up a basic restarting architecture:

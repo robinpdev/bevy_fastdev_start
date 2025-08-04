@@ -34,7 +34,8 @@ pub struct Immortal;
 
 #[derive(Component)]
 pub struct ModuleWin {
-    pub image_h: Handle<Image>
+    pub image_h: Handle<Image>,
+    pub resized: bool
 }
 
 /// Boilerplate for setting up a basic restarting architecture:

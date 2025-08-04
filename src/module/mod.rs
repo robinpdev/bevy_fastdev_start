@@ -26,6 +26,7 @@ impl Plugin for PongModulePlugin {
                 Update,
                 (rotator_system).run_if(in_state(AppState::Running)),
             )
+            .add_systems(PreUpdate, resize_images)
             // .add_systems(Update, (
             //     handle_click
             //         .run_if(input_just_pressed(MouseButton::Left)),
@@ -74,7 +75,7 @@ fn setup(
     //Sprite to display the rendered texture
     let mut sprite = Sprite::from_image(image_handle.clone());
     sprite.custom_size =  Some(Vec2{x: BOXWIDTH, y: BOXHEIGHT});
-    let spriteid = commands.spawn((sprite, ModuleWin{ image_h: image_handle.clone_weak() },)).id();
+    let spriteid = commands.spawn((sprite, ModuleWin{ image_h: image_handle.clone_weak(), resized: false },)).id();
 
     // This specifies the layer used for the first pass, which will be attached to the first pass camera and cube.
     let first_pass_layer = RenderLayers::layer(1);
@@ -109,6 +110,27 @@ fn setup(
 
 }
 
+#[hot]
+fn resize_images(
+    mut assets: ResMut<Assets<Image>>,
+    wins: Query<(&mut Sprite, &mut ModuleWin)>,
+){
+    for (sprite, mut win) in wins{
+        if(win.resized){
+            println!("RESIZE");
+            let image = assets.get_mut(win.image_h.id()).unwrap();
+            
+            let size = Extent3d {
+                width: sprite.custom_size.unwrap().x as u32,
+                height: sprite.custom_size.unwrap().y as u32,
+                ..default()
+            };
+            image.resize(size);
+            win.resized = false;
+        }
+
+    }
+}
 
 /// Rotates the inner cube (first pass)
 #[hot]

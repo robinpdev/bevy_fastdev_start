@@ -18,3 +18,34 @@
 - To start running your debug build, run ```just runhot```
 - If you want to hot patch a function, annotate it with #[hot]
 - To restart the entire scene (e.g. when you changed the setup function), press R in the bevy window
+
+
+
+# Bumerr
+
+Cross platform procedural + interactive motion graphics toolkit
+### Define graphical operators with code and combine them using a node graph and compositor
+
+### export options:
+- Executable (Linux, Mac, Windows)
+- Web using webassembly
+
+## why?
+There are some distinguishing features that are not available in some motion graphics programs:
+- Web export
+- Interactivity possible
+- Native executables (better performance)
+- 2D/3D compositor
+- Intuitive usage
+
+## Roadmap
+- Dynamically add module instances
+- Dynamic parameter updating (using gui)
+- Operator chaining
+- Write standard operators
+    - noise
+    - gradient
+    - displacement map
+    - shapes
+    - glow
+- compositor features (layering, visibility, ...)

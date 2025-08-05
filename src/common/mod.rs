@@ -34,7 +34,6 @@ pub struct Immortal;
 
 #[derive(Component)]
 pub struct ModuleWin {
-    pub image_h: Handle<Image>,
     pub resized: bool
 }
 

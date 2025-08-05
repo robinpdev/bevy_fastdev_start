@@ -1,11 +1,7 @@
 use crate::common::*;
 
-use bevy::{image, prelude::*};
-use bevy_egui::{
-    EguiContextSettings, EguiContexts, EguiPlugin, EguiPrimaryContextPass, EguiStartupSet, egui,
-};
+use bevy::{prelude::*};
 use bevy_simple_subsecond_system::prelude::*;
-use bevy::input::common_conditions::*;
 
 
 use bevy::{
@@ -26,7 +22,7 @@ impl Plugin for PongModulePlugin {
                 Update,
                 (rotator_system).run_if(in_state(AppState::Running)),
             )
-            .add_systems(PreUpdate, resize_images)
+            .add_systems(Update, resize_images)
             // .add_systems(Update, (
             //     handle_click
             //         .run_if(input_just_pressed(MouseButton::Left)),
@@ -75,7 +71,7 @@ fn setup(
     //Sprite to display the rendered texture
     let mut sprite = Sprite::from_image(image_handle.clone());
     sprite.custom_size =  Some(Vec2{x: BOXWIDTH, y: BOXHEIGHT});
-    let spriteid = commands.spawn((sprite, ModuleWin{ image_h: image_handle.clone_weak(), resized: false },)).id();
+    let spriteid = commands.spawn((sprite, ModuleWin{ resized: false },)).id();
 
     // This specifies the layer used for the first pass, which will be attached to the first pass camera and cube.
     let first_pass_layer = RenderLayers::layer(1);
@@ -113,12 +109,11 @@ fn setup(
 #[hot]
 fn resize_images(
     mut assets: ResMut<Assets<Image>>,
-    wins: Query<(&mut Sprite, &mut ModuleWin)>,
+    wins: Query<(&Sprite, &mut ModuleWin)>,
 ){
     for (sprite, mut win) in wins{
-        if(win.resized){
-            println!("RESIZE");
-            let image = assets.get_mut(win.image_h.id()).unwrap();
+        if win.resized{
+            let image = assets.get_mut(&sprite.image).unwrap();
             
             let size = Extent3d {
                 width: sprite.custom_size.unwrap().x as u32,
@@ -128,16 +123,14 @@ fn resize_images(
             image.resize(size);
             win.resized = false;
         }
-
     }
 }
 
 /// Rotates the inner cube (first pass)
 #[hot]
 fn rotator_system(
-    time: Res<Time>,
     mut query: Query<(&mut Transform, &mut VDirection, &mut HDirection, &FirstPassEntity)>,
-    mut modules: Query<&Sprite, With<ModuleWin>>,
+    modules: Query<&Sprite, With<ModuleWin>>,
 ) {
     // for mut transform in &mut query {
     //     transform.rotate_x(1.5 * time.delta_secs());

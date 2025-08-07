@@ -12,12 +12,16 @@ use bevy::{
     },
 };
 
+#[derive(Resource)]
+pub struct ModuleLayerCounter(pub u8);
+
 pub struct PongModulePlugin;
 
 impl Plugin for PongModulePlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_systems(OnEnter(AppState::Running), setup)
+            .insert_resource(ModuleLayerCounter(1))
+            .add_systems(OnEnter(AppState::Running), spawn_module)
             .add_systems(
                 Update,
                 (rotator_system).run_if(in_state(AppState::Running)),
@@ -39,11 +43,12 @@ pub struct FirstPassEntity{
 
 
 #[hot]
-fn setup(
+pub fn spawn_module(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut images: ResMut<Assets<Image>>,
     mut shadermaterials: ResMut<Assets<CustomMaterial>>,
+    mut layer_counter: ResMut<ModuleLayerCounter>,
 ) {
     println!("module setup!");
     // rendered texture
@@ -74,7 +79,8 @@ fn setup(
     let spriteid = commands.spawn((sprite, ModuleWin{ resized: false },)).id();
 
     // This specifies the layer used for the first pass, which will be attached to the first pass camera and cube.
-    let first_pass_layer = RenderLayers::layer(1);
+    let first_pass_layer = RenderLayers::layer(layer_counter.0 as usize);
+    layer_counter.0 += 1;
 
     //first pass circle mesh
     //let circlemesh = meshes.add(Circle::new(200.0));
@@ -103,7 +109,6 @@ fn setup(
         first_pass_layer,
         
     ));
-
 }
 
 #[hot]

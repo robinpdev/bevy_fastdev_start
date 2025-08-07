@@ -21,7 +21,7 @@
 
 
 
-# Bumerr
+# Bumperr
 
 Cross platform procedural + interactive motion graphics toolkit
 ### Define graphical operators with code and combine them using a node graph and compositor

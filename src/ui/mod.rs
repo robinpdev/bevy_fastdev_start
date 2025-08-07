@@ -1,15 +1,10 @@
-use crate::common::{BOXHEIGHT, BOXWIDTH, ModuleWin};
-
+use crate::common::{BOXHEIGHT, BOXWIDTH, ModuleWin, CustomMaterial};
+use crate::module::{spawn_module, ModuleLayerCounter};
 use bevy::prelude::*;
 use bevy_egui::{
-    EguiContextSettings, EguiContexts, EguiPlugin, EguiPrimaryContextPass, EguiStartupSet, egui,
+    EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui,
 };
 
-use bevy::{
-    render::{
-        render_resource::{Extent3d},
-    },
-};
 use bevy_simple_subsecond_system::prelude::*;
 
 // Define your PlayerPlugin here, potentially combining systems from this module and sub-modules
@@ -25,16 +20,29 @@ impl Plugin for BumpUiPlugin {
 #[hot]
 fn ui_example_system(
     mut contexts: EguiContexts,
-    query: Query<(&mut Transform, &mut ModuleWin, &mut Sprite)>,
+    commands: Commands,
+    meshes: ResMut<Assets<Mesh>>,
+    images: ResMut<Assets<Image>>,
+    shadermaterials: ResMut<Assets<CustomMaterial>>,
+    layer_counter: ResMut<ModuleLayerCounter>,
+    query: Query<(Entity, &mut Transform, &mut ModuleWin, &mut Sprite)>,
     windows: Query<&mut Window>,
 ) -> Result {
-    if let Ok(win) = windows.single(){
+    if let Ok(win) = windows.single() {
+        // new window with our spawn button
+        egui::Window::new("Module Spawner").show(contexts.ctx_mut()?, |ui| {
+            if ui.button("Spawn Module").clicked() {
+                spawn_module(commands, meshes, images, shadermaterials, layer_counter);
+            }
+        });
+
         egui::Window::new("Hello").show(contexts.ctx_mut()?, |ui| {
             ui.label("world");
         });
     
-        for (mut tf, mut mw, mut sprite) in query {
-            let window = egui::Window::new("module")
+        for (entity, mut tf, mut mw, mut sprite) in query {
+            let title = format!("module_{}", entity.index());
+            let window = egui::Window::new(title)
                 .pivot(egui::Align2::LEFT_TOP)
                 .min_width(40.0)
                 .min_height(40.0)
@@ -68,6 +76,5 @@ fn ui_example_system(
             tf.translation.y = -response.rect.center().y + win.resolution.height() / 2.0;
         }
     }
-
     Ok(())
 }

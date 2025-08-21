@@ -44,7 +44,7 @@ fn fragment(mesh: VertexOutput) -> @location(0) vec4<f32> {
     var final_color = mix(material_color, dynamic_color, pow(pattern_factor * 0.5 + 0.5, COLOR_MIX_POWER));
 
     // You can still apply a global multiplier for overall brightness/alpha
-    final_color *= vec4<f32>(1.0, 1.0, 1.0, 0.8); // Adjust overall transparency
+    final_color *= vec4<f32>(1.0, 1.0, 1.0, 1.0); // Adjust overall transparency
 
     return final_color;
 }

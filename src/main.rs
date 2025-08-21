@@ -26,7 +26,7 @@ fn main() {
             primary_window: Some(Window {
                 title: "I am the window!".into(),
                 name: Some("bevy.app".into()),
-                resolution: (500., 300.).into(),
+                resolution: (1000., 700.).into(),
                 // present_mode: PresentMode::AutoNoVsync,
                 // Tells Wasm to resize the window according to the available canvas
                 fit_canvas_to_parent: true,
@@ -77,7 +77,7 @@ fn main() {
         .add_systems(OnExit(AppState::Running), teardown)
         .add_systems(PreUpdate, trigger_restart)
         .add_systems(PreStartup, spawn_immortals)
-        .add_plugins(module::PongModulePlugin)
+        .add_plugins(module::ModulePlugin)
         .add_plugins(PerfUiPlugin)
         .add_plugins(ui::BumpUiPlugin);
 

@@ -8,6 +8,8 @@ use bevy::{
     sprite::{AlphaMode2d, Material2d},
 };
 
+use crate::module::ModuleClass;
+
 #[derive(Component)]
 pub enum HDirection {
     Left,
@@ -23,8 +25,8 @@ pub enum VDirection {
 pub const SPEED: f32 = 10.0;
 pub const RADIUS: f32 = 100.0;
 
-pub const BOXWIDTH: f32 = 700.0;
-pub const BOXHEIGHT: f32 = 512.0;
+pub const BOXWIDTH: f32 = 400.0;
+pub const BOXHEIGHT: f32 = 312.0;
 
 /// Marker component for things we spawn once and never despawn
 #[derive(Component)]
@@ -34,7 +36,8 @@ pub struct Immortal;
 
 #[derive(Component)]
 pub struct ModuleWin {
-    pub resized: bool
+    pub resized: bool,
+    pub class: ModuleClass,
 }
 
 /// Boilerplate for setting up a basic restarting architecture:

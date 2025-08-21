@@ -5,6 +5,8 @@ use bevy_egui::{
     EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui,
 };
 
+use crate::module::{SpawnModuleEvent, ModuleClass};
+
 use bevy_simple_subsecond_system::prelude::*;
 
 // Define your PlayerPlugin here, potentially combining systems from this module and sub-modules
@@ -19,12 +21,8 @@ impl Plugin for BumpUiPlugin {
 
 #[hot]
 fn ui_example_system(
+    mut ev_spawnmodule: EventWriter<SpawnModuleEvent>,
     mut contexts: EguiContexts,
-    commands: Commands,
-    meshes: ResMut<Assets<Mesh>>,
-    images: ResMut<Assets<Image>>,
-    shadermaterials: ResMut<Assets<CustomMaterial>>,
-    layer_counter: ResMut<ModuleLayerCounter>,
     query: Query<(Entity, &mut Transform, &mut ModuleWin, &mut Sprite)>,
     windows: Query<&mut Window>,
 ) -> Result {
@@ -32,46 +30,43 @@ fn ui_example_system(
         // new window with our spawn button
         egui::Window::new("Module Spawner").show(contexts.ctx_mut()?, |ui| {
             if ui.button("Spawn Module").clicked() {
-                spawn_module(commands, meshes, images, shadermaterials, layer_counter);
+                ev_spawnmodule.write(SpawnModuleEvent {
+                    moduleclass: ModuleClass::Pong,
+                });
             }
-        });
-
-        egui::Window::new("Hello").show(contexts.ctx_mut()?, |ui| {
-            ui.label("world");
+            if ui.button("Spawn noise Module").clicked() {
+                ev_spawnmodule.write(SpawnModuleEvent {
+                    moduleclass: ModuleClass::Noise,
+                });
+            }
         });
     
         for (entity, mut tf, mut mw, mut sprite) in query {
-            let title = format!("module_{}", entity.index());
+            let title = format!("{:?} module", mw.class);
             let window = egui::Window::new(title)
+                .id(egui::Id::new(entity.index()))
                 .pivot(egui::Align2::LEFT_TOP)
-                .min_width(40.0)
-                .min_height(40.0)
+                .min_width(20.0)
+                .min_height(20.0)
                 .default_size([BOXWIDTH, BOXHEIGHT])
                 .constrain(false)
-                .frame(egui::Frame::default().fill(egui::Color32::TRANSPARENT))
+                .frame(egui::Frame::default().fill(egui::Color32::TRANSPARENT).
+                    stroke(egui::Stroke::new(4.0, egui::Color32::BLACK)))
                 .show(contexts.ctx_mut()?, |ui| {
-                    ui.label("yo");
                     ui.allocate_space(ui.available_size());
                 });
     
             // Get the current position after the window has been shown and potentially moved
             let response = window.and_then(|r| Some(r.response)).unwrap();
             let newsize = ((response.rect.size().x) as u32, (response.rect.size().y) as u32);
+
+            // set sprite custom size to window size if updated
             if (sprite.custom_size.unwrap().x as u32, sprite.custom_size.unwrap().y as u32) != newsize {
-                // println!("FETCH");
-                // let image = assets.get_mut(sprite.image.id()).unwrap();
                 sprite.custom_size = Some(Vec2 { x: newsize.0 as f32, y: newsize.1 as f32 });
                 mw.resized = true;
-
-    
-                // let size = Extent3d {
-                //     width: newsize.0,
-                //     height: newsize.1,
-                //     ..default()
-                // };
-                // image.resize(size);
             }
-    
+            
+            // set sprite position to window position
             tf.translation.x = response.rect.center().x - win.resolution.width() / 2.0;
             tf.translation.y = -response.rect.center().y + win.resolution.height() / 2.0;
         }

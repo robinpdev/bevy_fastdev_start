@@ -1,11 +1,9 @@
-use crate::common::{BOXHEIGHT, BOXWIDTH, ModuleWin, CustomMaterial};
-use crate::module::{spawn_module, ModuleLayerCounter};
+use crate::common::{BOXHEIGHT, BOXWIDTH, CustomMaterial, ModuleWin};
+use crate::module::{ModuleLayerCounter, spawn_module};
 use bevy::prelude::*;
-use bevy_egui::{
-    EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui,
-};
+use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
 
-use crate::module::{SpawnModuleEvent, ModuleClass};
+use crate::module::{ModuleClass, SpawnModuleEvent};
 
 use bevy_simple_subsecond_system::prelude::*;
 
@@ -40,7 +38,7 @@ fn ui_example_system(
                 });
             }
         });
-    
+
         for (entity, mut tf, mut mw, mut sprite) in query {
             let title = format!("{:?} module", mw.class);
             let window = egui::Window::new(title)
@@ -50,22 +48,36 @@ fn ui_example_system(
                 .min_height(20.0)
                 .default_size([BOXWIDTH, BOXHEIGHT])
                 .constrain(false)
-                .frame(egui::Frame::default().fill(egui::Color32::TRANSPARENT).
-                    stroke(egui::Stroke::new(4.0, egui::Color32::BLACK)))
+                .title_bar(false)
+                .frame(
+                    egui::Frame::default()
+                        .fill(egui::Color32::TRANSPARENT)
+                        // .stroke(egui::Stroke::new(4.0, egui::Color32::BLACK)),
+                )
                 .show(contexts.ctx_mut()?, |ui| {
                     ui.allocate_space(ui.available_size());
                 });
-    
+
             // Get the current position after the window has been shown and potentially moved
             let response = window.and_then(|r| Some(r.response)).unwrap();
-            let newsize = ((response.rect.size().x) as u32, (response.rect.size().y) as u32);
+            let newsize = (
+                (response.rect.size().x) as u32,
+                (response.rect.size().y) as u32,
+            );
 
             // set sprite custom size to window size if updated
-            if (sprite.custom_size.unwrap().x as u32, sprite.custom_size.unwrap().y as u32) != newsize {
-                sprite.custom_size = Some(Vec2 { x: newsize.0 as f32, y: newsize.1 as f32 });
+            if (
+                sprite.custom_size.unwrap().x as u32,
+                sprite.custom_size.unwrap().y as u32,
+            ) != newsize
+            {
+                sprite.custom_size = Some(Vec2 {
+                    x: newsize.0 as f32,
+                    y: newsize.1 as f32,
+                });
                 mw.resized = true;
             }
-            
+
             // set sprite position to window position
             tf.translation.x = response.rect.center().x - win.resolution.width() / 2.0;
             tf.translation.y = -response.rect.center().y + win.resolution.height() / 2.0;

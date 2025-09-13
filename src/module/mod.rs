@@ -31,6 +31,13 @@ pub struct SpawnModuleInternalEvent {
     pub spriteid: Entity,
 }
 
+#[derive(Event)]
+pub struct ResizeEvent {
+    pub target: Entity,
+    pub width: f32,
+    pub height: f32,
+}
+
 #[derive(Resource)]
 pub struct ModuleLayerCounter(pub u8);
 
@@ -53,8 +60,9 @@ impl Plugin for ModulePlugin {
             .insert_resource(ModuleLayerCounter(1))
             .add_event::<SpawnModuleEvent>()
             .add_event::<SpawnModuleInternalEvent>()
+            .add_event::<ResizeEvent>()
             .add_systems(PreUpdate, spawn_module.run_if(on_event::<SpawnModuleEvent>))
-            .add_systems(Update, resize_images)
+            .add_systems(Update, resize_images.run_if(on_event::<ResizeEvent>))
             .add_plugins(noise::NoiseModule)
             .add_plugins(pong::PongModule)
             // .add_systems(Update, (
@@ -112,7 +120,7 @@ pub fn spawn_module(
         let spriteid = commands
             .spawn((
                 sprite,
-                ModuleWin { resized: false, class: ev.moduleclass },
+                ModuleWin { class: ev.moduleclass },
                 Transform::from_translation(Vec3::new(0.0, 0.0, layer_counter.0 as f32 * 0.01)),
             ))
             .id();
@@ -142,18 +150,21 @@ pub fn spawn_module(
 }
 
 #[hot]
-fn resize_images(mut assets: ResMut<Assets<Image>>, wins: Query<(&Sprite, &mut ModuleWin)>) {
-    for (sprite, mut win) in wins {
-        if win.resized {
+fn resize_images(
+    mut assets: ResMut<Assets<Image>>,
+    wins: Query<(&Sprite, &mut ModuleWin)>,
+    mut ev_resize: EventReader<ResizeEvent>,
+) {
+    for ev in ev_resize.read() {
+        if let Ok((sprite, mut win)) = wins.get(ev.target) {
             let image = assets.get_mut(&sprite.image).unwrap();
 
             let size = Extent3d {
-                width: sprite.custom_size.unwrap().x as u32,
-                height: sprite.custom_size.unwrap().y as u32,
+                width: ev.width as u32,
+                height: ev.height as u32,
                 ..default()
             };
             image.resize(size);
-            win.resized = false;
         }
     }
 }

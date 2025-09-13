@@ -36,7 +36,6 @@ pub struct Immortal;
 
 #[derive(Component)]
 pub struct ModuleWin {
-    pub resized: bool,
     pub class: ModuleClass,
 }
 

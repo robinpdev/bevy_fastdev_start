@@ -3,7 +3,7 @@ use crate::module::{ModuleLayerCounter, spawn_module};
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
 
-use crate::module::{ModuleClass, SpawnModuleEvent};
+use crate::module::{ModuleClass, SpawnModuleEvent, ResizeEvent};
 
 use bevy_simple_subsecond_system::prelude::*;
 
@@ -20,13 +20,14 @@ impl Plugin for BumpUiPlugin {
 #[hot]
 fn ui_example_system(
     mut ev_spawnmodule: EventWriter<SpawnModuleEvent>,
+    mut ev_resize: EventWriter<ResizeEvent>,
     mut contexts: EguiContexts,
     query: Query<(Entity, &mut Transform, &mut ModuleWin, &mut Sprite)>,
     windows: Query<&mut Window>,
 ) -> Result {
     if let Ok(win) = windows.single() {
         // new window with our spawn button
-        egui::Window::new("Module Spawner").show(contexts.ctx_mut()?, |ui| {
+        egui::SidePanel::left("Module Spawner").show(contexts.ctx_mut()?, |ui| {
             if ui.button("Spawn Module").clicked() {
                 ev_spawnmodule.write(SpawnModuleEvent {
                     moduleclass: ModuleClass::Pong,
@@ -75,7 +76,11 @@ fn ui_example_system(
                     x: newsize.0 as f32,
                     y: newsize.1 as f32,
                 });
-                mw.resized = true;
+                ev_resize.write(ResizeEvent {
+                    target: entity,
+                    width: newsize.0 as f32,
+                    height: newsize.1 as f32,
+                });
             }
 
             // set sprite position to window position

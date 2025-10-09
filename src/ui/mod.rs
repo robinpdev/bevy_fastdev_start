@@ -5,7 +5,7 @@ use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
 
 use crate::module::{ModuleClass, SpawnModuleEvent, ResizeEvent};
 
-use bevy_simple_subsecond_system::prelude::*;
+// use bevy_simple_subsecond_system::prelude::*;
 
 // Define your PlayerPlugin here, potentially combining systems from this module and sub-modules
 pub struct BumpUiPlugin;
@@ -17,7 +17,7 @@ impl Plugin for BumpUiPlugin {
     }
 }
 
-#[hot]
+
 fn ui_example_system(
     mut ev_spawnmodule: EventWriter<SpawnModuleEvent>,
     mut ev_resize: EventWriter<ResizeEvent>,
@@ -28,7 +28,7 @@ fn ui_example_system(
     if let Ok(win) = windows.single() {
         // new window with our spawn button
         egui::SidePanel::left("Module Spawner").show(contexts.ctx_mut()?, |ui| {
-            if ui.button("Spawn Module").clicked() {
+            if ui.button("Spawn pong Module").clicked() {
                 ev_spawnmodule.write(SpawnModuleEvent {
                     moduleclass: ModuleClass::Pong,
                 });

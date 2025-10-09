@@ -16,7 +16,7 @@
 
 ## running
 - To start running your debug build, run ```just runhot```
-- If you want to hot patch a function, annotate it with #[hot]
+- If you want to hot patch a function, annotate it with 
 - To restart the entire scene (e.g. when you changed the setup function), press R in the bevy window
 
 

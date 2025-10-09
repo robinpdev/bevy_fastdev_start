@@ -43,7 +43,7 @@ fn spawn_module(
 }
 
 /// Rotates the inner cube (first pass)
-#[hot]
+
 fn pong_system(
     mut query: Query<(&mut Transform, &mut VDirection, &mut HDirection, &FirstPassEntity)>,
     modules: Query<&Sprite, With<ModuleWin>>,

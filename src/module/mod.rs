@@ -1,7 +1,7 @@
 use crate::common::*;
 
 use bevy::prelude::*;
-use bevy_simple_subsecond_system::prelude::*;
+// use bevy_simple_subsecond_system::prelude::*;
 
 //import noisemodule
 mod noise;
@@ -96,7 +96,7 @@ pub struct FirstPassEntity {
     ModuleId: Entity,
 }
 
-#[hot]
+
 pub fn spawn_module(
     mut ev_spawn: MessageReader<SpawnModuleEvent>,
     mut ev_spawnmodule: EventWriter<SpawnModuleInternalEvent>,
@@ -167,7 +167,7 @@ pub fn spawn_module(
     }
 }
 
-#[hot]
+
 fn resize_images(
     mut assets: ResMut<Assets<Image>>,
     wins: Query<(&Sprite, &mut ModuleWin)>,

@@ -4,12 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bevy-persistent = { version = "0.8.0", features = ["all"] }
-bevy-persistent-windows = "0.8.0"
+# bevy-persistent = { version = "0.8.0", features = ["all"] }
+# bevy-persistent-windows = "0.8.0"
 bevy_egui = "0.37.1"
-bevy_framepace = "0.19.1"
-bevy_simple_subsecond_system = "0.2.0"
-iyes_perf_ui = "0.5.0"
+# bevy_framepace = "0.19.1"
+# bevy_simple_subsecond_system = "0.2.0"
+# iyes_perf_ui = "0.5.0"
 log = { version = "*", features = ["max_level_debug", "release_max_level_warn"] }
 
 
@@ -33,6 +33,7 @@ features = [
   "bevy_state",
   "bevy_text",
   "bevy_window",
+  "bevy_ui",
   # "std",
   # "async_executor",
   # "multi_threaded",
@@ -64,11 +65,12 @@ features = [
   "default_font",
   "webgl2",
   "file_watcher",
-  "zstd_rust"
+  "zstd_rust",
+  "hotpatching"
 ]
 
 [target.x86_64-unknown-linux-gnu]
-bevy = {version = "0.16.1", default-features = false, features = ["file_watcher", "std", "multi_threaded"]}
+bevy = {version = "0.17.2", default-features = false, features = ["file_watcher", "std", "multi_threaded"]}
 
 # Enable max optimizations for dependencies, but not for our code:
 [profile.dev.package."*"]

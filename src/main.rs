@@ -8,14 +8,20 @@ use common::*;
 // use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
 // use bevy::diagnostic::LogDiagnosticsPlugin;
 
-use bevy_simple_subsecond_system::prelude::*;
+// use bevy_simple_subsecond_system::prelude::*;
 
-use bevy::{prelude::*, sprite_render::Material2dPlugin, window::PrimaryWindow};
+use bevy::{dev_tools::fps_overlay::{FpsOverlayConfig, FpsOverlayPlugin, FrameTimeGraphConfig}, prelude::*, sprite_render::Material2dPlugin, window::PrimaryWindow};
 use std::path::Path;
 
-// use bevy::prelude::ComputedNode; TODO find feature flag for this
+struct OverlayColor;
 
-#[hot]
+// use bevy::prelude::ComputedNode; TODO find feature flag for this
+impl OverlayColor {
+    const RED: Color = Color::srgb(1.0, 0.0, 0.0);
+    const GREEN: Color = Color::srgb(0.0, 1.0, 0.0);
+}
+
+
 fn main() {
     let mut bevyapp = App::new();
 
@@ -58,6 +64,33 @@ fn main() {
         .insert_resource(ClearColor(Color::srgba(0.2, 0.2, 0.2, 1.0)))
         .add_plugins((
             default_plugins,
+            FpsOverlayPlugin {
+                config: FpsOverlayConfig {
+                    text_config: TextFont {
+                        // Here we define size of our overlay
+                        font_size: 42.0,
+                        // If we want, we can use a custom font
+                        font: default(),
+                        // We could also disable font smoothing,
+                        // font_smoothing: FontSmoothing::default(),
+                        ..default()
+                    },
+                    // We can also change color of the overlay
+                    text_color: OverlayColor::GREEN,
+                    // We can also set the refresh interval for the FPS counter
+                    refresh_interval: core::time::Duration::from_millis(100),
+                    enabled: true,
+                    frame_time_graph_config: FrameTimeGraphConfig {
+                        enabled: true,
+                        // The minimum acceptable fps
+                        min_fps: 30.0,
+                        // The target fps
+                        target_fps: 144.0,
+                    },
+                },
+            },
+
+
             // LogDiagnosticsPlugin::default(),
         ))
         // .add_plugins(PersistentWindowsPlugin)
@@ -111,7 +144,7 @@ fn spawn_immortals(
     mut commands: Commands,
 ) {
     println!("immortal");
-    use bevy_framepace::Limiter;
+    // use bevy_framepace::Limiter;
     // settings.limiter = Limiter::from_framerate(30.0);
 
     // main camera
@@ -169,7 +202,7 @@ fn teardown(
 
 /// Runs each time the scene is (re)started
 /// Sets up a circle that gets rendered to a texture and then shown on the main context
-#[hot]
+
 fn setup(mut commands: Commands, mut next_state: ResMut<NextState<AppState>>) {
     println!("setup!");
 

@@ -9,13 +9,11 @@ use common::*;
 // use bevy::diagnostic::LogDiagnosticsPlugin;
 
 use bevy_simple_subsecond_system::prelude::*;
-use iyes_perf_ui::prelude::*;
 
-use bevy_persistent::prelude::*;
-use bevy_persistent_windows::prelude::*;
-
-use bevy::{prelude::*, sprite::Material2dPlugin, window::PrimaryWindow};
+use bevy::{prelude::*, sprite_render::Material2dPlugin, window::PrimaryWindow};
 use std::path::Path;
+
+// use bevy::prelude::ComputedNode; TODO find feature flag for this
 
 #[hot]
 fn main() {
@@ -26,7 +24,7 @@ fn main() {
             primary_window: Some(Window {
                 title: "I am the window!".into(),
                 name: Some("bevy.app".into()),
-                resolution: (1000., 700.).into(),
+                resolution: (1000, 700).into(),
                 // present_mode: PresentMode::AutoNoVsync,
                 // Tells Wasm to resize the window according to the available canvas
                 fit_canvas_to_parent: true,
@@ -61,11 +59,10 @@ fn main() {
         .add_plugins((
             default_plugins,
             // LogDiagnosticsPlugin::default(),
-            bevy_framepace::FramepacePlugin,
         ))
-        .add_plugins(PersistentWindowsPlugin)
+        // .add_plugins(PersistentWindowsPlugin)
         .add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin::default())
-        .add_plugins(SimpleSubsecondPlugin::default())
+        // .add_plugins(SimpleSubsecondPlugin::default())
         .add_plugins(Material2dPlugin::<CustomMaterial>::default())
         // .edit_schedule(Update, |schedule| {
         //     schedule.set_executor_kind(ExecutorKind::SingleThreaded);
@@ -78,7 +75,7 @@ fn main() {
         .add_systems(PreUpdate, trigger_restart)
         .add_systems(PreStartup, spawn_immortals)
         .add_plugins(module::ModulePlugin)
-        .add_plugins(PerfUiPlugin)
+        // .add_plugins(PerfUiPlugin)
         .add_plugins(ui::BumpUiPlugin);
 
     bevyapp.run();
@@ -110,12 +107,12 @@ fn trigger_restart(
 /// Code that is actually! run once on startup of your program
 /// You can spawn entities with the Immortal component (above) here and they will not be removed when restarting
 fn spawn_immortals(
-    mut settings: ResMut<bevy_framepace::FramepaceSettings>,
+    // mut settings: ResMut<bevy_framepace::FramepaceSettings>, TODO use builtin limiter
     mut commands: Commands,
 ) {
     println!("immortal");
     use bevy_framepace::Limiter;
-    settings.limiter = Limiter::from_framerate(30.0);
+    // settings.limiter = Limiter::from_framerate(30.0);
 
     // main camera
     commands.spawn((Camera2d, Immortal));
@@ -145,8 +142,8 @@ fn teardown(
             Without<bevy::ecs::observer::Observer>,
             Without<bevy::window::Monitor>,
             Without<Immortal>,
-            Without<ComputedNode>,
-            Without<EguiContext>,
+            // Without<ComputedNode>,
+            // Without<EguiContext>,
         ),
     >,
     world: &World
@@ -177,16 +174,16 @@ fn setup(mut commands: Commands, mut next_state: ResMut<NextState<AppState>>) {
     println!("setup!");
 
     // create a simple Perf UI
-    commands.spawn((
-        PerfUiRoot {
-            display_labels: false,
-            layout_horizontal: true,
-            values_col_width: 32.0,
-            ..default()
-        },
-        PerfUiEntryFPSWorst::default(),
-        PerfUiEntryFPS::default(),
-    ));
+    // commands.spawn((
+    //     PerfUiRoot {
+    //         display_labels: false,
+    //         layout_horizontal: true,
+    //         values_col_width: 32.0,
+    //         ..default()
+    //     },
+    //     PerfUiEntryFPSWorst::default(),
+    //     PerfUiEntryFPS::default(),
+    // )); TODO USE BUILTIN PERF UI
 
     next_state.set(AppState::Running);
 }

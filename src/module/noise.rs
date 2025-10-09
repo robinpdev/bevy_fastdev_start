@@ -3,12 +3,12 @@ use bevy::prelude::*;
 use crate::module::*;
 
 use bevy::{reflect::TypePath, render::render_resource::AsBindGroup};
-use bevy::{prelude::*, sprite::Material2dPlugin, window::PrimaryWindow};
+use bevy::{prelude::*, sprite_render::Material2dPlugin, window::PrimaryWindow};
 
 
 use bevy::{
-    render::render_resource::ShaderRef,
-    sprite::{AlphaMode2d, Material2d},
+    shader::ShaderRef,
+    sprite_render::{AlphaMode2d, Material2d},
 };
 
 pub struct NoiseModule;
@@ -17,15 +17,19 @@ impl Plugin for NoiseModule {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            spawn_module.run_if(
-                on_event::<SpawnModuleInternalEvent>.and(run_if_module(ModuleClass::Noise)),
-            ),
+            (spawn_module).run_if(
+                on_event::<SpawnModuleInternalEvent>.and(run_if_module::<SpawnModuleEvent>(ModuleClass::Noise)),),
+            
         )
         .add_plugins(Material2dPlugin::<NoiseMaterial>::default())
 
         .add_systems(Update, noise_system);
     }
 }
+
+// fn resize_rect(
+
+// )
 
 // This is the struct that will be passed to your shader
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
@@ -50,7 +54,7 @@ impl Material2d for NoiseMaterial {
 }
 
 fn spawn_module(
-    mut ev_spawn: EventReader<SpawnModuleInternalEvent>,
+    mut ev_spawn: MessageReader<SpawnModuleInternalEvent>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut shadermaterials: ResMut<Assets<NoiseMaterial>>,
@@ -67,7 +71,7 @@ fn spawn_module(
             })),
             Transform::default(),
             FirstPassEntity {
-                spriteid: ev.spriteid,
+                ModuleId: ev.moduleID,
             },
             ev.layer.clone(),
         ));

@@ -8,10 +8,11 @@ mod noise;
 mod pong;
 
 use bevy::render::{
-    render_asset::RenderAssetUsages,
     render_resource::{Extent3d, TextureDimension, TextureFormat, TextureUsages},
-    view::RenderLayers,
 };
+
+use bevy::asset::RenderAssetUsages;
+use bevy::camera::visibility::RenderLayers;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum ModuleClass {
@@ -19,19 +20,36 @@ pub enum ModuleClass {
     Noise,
 }
 
-#[derive(Event)]
+trait HasModuleClass {
+    fn get_module_class(&self) -> ModuleClass;
+}
+
+#[derive(Message)]
 pub struct SpawnModuleEvent {
     pub moduleclass: ModuleClass,
 }
 
-#[derive(Event)]
+#[derive(Message)]
 pub struct SpawnModuleInternalEvent {
     pub moduleclass: ModuleClass,
     pub layer: RenderLayers,
-    pub spriteid: Entity,
+    pub moduleID: Entity,
 }
 
-#[derive(Event)]
+impl HasModuleClass for SpawnModuleEvent {
+    fn get_module_class(&self) -> ModuleClass {
+        self.moduleclass
+    }
+}
+
+impl HasModuleClass for SpawnModuleInternalEvent {
+    fn get_module_class(&self) -> ModuleClass {
+        self.moduleclass
+    }
+}
+
+
+#[derive(Message)]
 pub struct ResizeEvent {
     pub target: Entity,
     pub width: f32,
@@ -43,10 +61,10 @@ pub struct ModuleLayerCounter(pub u8);
 
 pub struct ModulePlugin;
 
-pub fn run_if_module(class: ModuleClass) -> impl Fn(EventReader<SpawnModuleInternalEvent>) -> bool {
+pub fn run_if_module<T>(class: ModuleClass) -> impl Fn(MessageReader<T>) -> bool where T : Message + HasModuleClass {
     move |mut evspawn| {
         for ev in evspawn.read() {
-            if ev.moduleclass == class {
+            if ev.get_module_class() == class {
                 return true;
             }
         }
@@ -75,12 +93,12 @@ impl Plugin for ModulePlugin {
 
 #[derive(Component)]
 pub struct FirstPassEntity {
-    spriteid: Entity,
+    ModuleId: Entity,
 }
 
 #[hot]
 pub fn spawn_module(
-    mut ev_spawn: EventReader<SpawnModuleEvent>,
+    mut ev_spawn: MessageReader<SpawnModuleEvent>,
     mut ev_spawnmodule: EventWriter<SpawnModuleInternalEvent>,
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
@@ -144,7 +162,7 @@ pub fn spawn_module(
         ev_spawnmodule.write(SpawnModuleInternalEvent {
             moduleclass: ev.moduleclass,
             layer: first_pass_layer.clone(),
-            spriteid,
+            moduleID: spriteid,
         });
     }
 }
@@ -153,7 +171,7 @@ pub fn spawn_module(
 fn resize_images(
     mut assets: ResMut<Assets<Image>>,
     wins: Query<(&Sprite, &mut ModuleWin)>,
-    mut ev_resize: EventReader<ResizeEvent>,
+    mut ev_resize: MessageReader<ResizeEvent>,
 ) {
     for ev in ev_resize.read() {
         if let Ok((sprite, mut win)) = wins.get(ev.target) {

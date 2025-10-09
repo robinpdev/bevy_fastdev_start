@@ -4,8 +4,8 @@ use bevy::prelude::*;
 use bevy::{reflect::TypePath, render::render_resource::AsBindGroup};
 
 use bevy::{
-    render::render_resource::ShaderRef,
-    sprite::{AlphaMode2d, Material2d},
+    shader::ShaderRef,
+    sprite_render::{AlphaMode2d, Material2d},
 };
 
 use crate::module::ModuleClass;

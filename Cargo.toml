@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 bevy-persistent = { version = "0.8.0", features = ["all"] }
 bevy-persistent-windows = "0.8.0"
-bevy_egui = "0.35.0"
+bevy_egui = "0.37.1"
 bevy_framepace = "0.19.1"
 bevy_simple_subsecond_system = "0.2.0"
 iyes_perf_ui = "0.5.0"
@@ -14,7 +14,7 @@ log = { version = "*", features = ["max_level_debug", "release_max_level_warn"] 
 
 
 [dependencies.bevy]
-version = "0.16.1"
+version = "0.17.2"
 # Disable the default features if there are any that you do not want
 default-features = false
 features = [
@@ -28,6 +28,7 @@ features = [
   "bevy_render",
   "bevy_scene",
   "bevy_sprite",
+  "bevy_sprite_render",
   "bevy_sprite_picking_backend",
   "bevy_state",
   "bevy_text",
@@ -55,14 +56,15 @@ features = [
   "pbr_transmission_textures",
   "asset_processor",
   "bevy_dev_tools",
-  "configurable_error_handler",
+  # "configurable_error_handler",
   "trace",
   "dynamic_linking",
   "png",
   # "file_watcher", # Asset hot-reloading
   "default_font",
   "webgl2",
-  "file_watcher"
+  "file_watcher",
+  "zstd_rust"
 ]
 
 [target.x86_64-unknown-linux-gnu]

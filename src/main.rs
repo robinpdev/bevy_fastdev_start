@@ -94,7 +94,7 @@ fn main() {
             // LogDiagnosticsPlugin::default(),
         ))
         // .add_plugins(PersistentWindowsPlugin)
-        .add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin::default())
+        // .add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin::default())
         // .add_plugins(SimpleSubsecondPlugin::default())
         .add_plugins(Material2dPlugin::<CustomMaterial>::default())
         // .edit_schedule(Update, |schedule| {

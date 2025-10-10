@@ -3,12 +3,12 @@ use bevy::prelude::*;
 use crate::module::*;
 
 use bevy::{reflect::TypePath, render::render_resource::AsBindGroup};
-use bevy::{prelude::*, sprite_render::Material2dPlugin, window::PrimaryWindow};
+use bevy::{sprite_render::Material2dPlugin};
 
 
 use bevy::{
     shader::ShaderRef,
-    sprite_render::{AlphaMode2d, Material2d},
+    sprite_render::{Material2d},
 };
 
 pub struct NoiseModule;
@@ -18,12 +18,10 @@ impl Plugin for NoiseModule {
         app.add_systems(
             Update,
             (spawn_module).run_if(
-                on_event::<SpawnModuleInternalEvent>.and(run_if_module::<SpawnModuleEvent>(ModuleClass::Noise)),),
+                on_message::<SpawnModuleInternalEvent>.and(run_if_module::<SpawnModuleEvent>(ModuleClass::Noise)),),
             
         )
-        .add_plugins(Material2dPlugin::<NoiseMaterial>::default())
-
-        .add_systems(Update, noise_system);
+        .add_plugins(Material2dPlugin::<NoiseMaterial>::default());
     }
 }
 
@@ -71,13 +69,9 @@ fn spawn_module(
             })),
             Transform::default(),
             FirstPassEntity {
-                ModuleId: ev.moduleID,
+                module_id: ev.module_id,
             },
             ev.layer.clone(),
         ));
     }
 }
-
-
-
-fn noise_system(time: Res<Time>) {}

@@ -1,4 +1,3 @@
-use bevy::image::*;
 use bevy::prelude::*;
 
 use bevy::{reflect::TypePath, render::render_resource::AsBindGroup};

@@ -33,7 +33,7 @@ pub struct SpawnModuleEvent {
 pub struct SpawnModuleInternalEvent {
     pub moduleclass: ModuleClass,
     pub layer: RenderLayers,
-    pub moduleID: Entity,
+    pub module_id: Entity,
 }
 
 impl HasModuleClass for SpawnModuleEvent {
@@ -61,7 +61,7 @@ pub struct ModuleLayerCounter(pub u8);
 
 pub struct ModulePlugin;
 
-pub fn run_if_module<T>(class: ModuleClass) -> impl Fn(MessageReader<T>) -> bool where T : Message + HasModuleClass {
+pub(self) fn run_if_module<T>(class: ModuleClass) -> impl Fn(MessageReader<T>) -> bool where T : Message + HasModuleClass {
     move |mut evspawn| {
         for ev in evspawn.read() {
             if ev.get_module_class() == class {
@@ -76,11 +76,11 @@ impl Plugin for ModulePlugin {
     fn build(&self, app: &mut App) {
         app
             .insert_resource(ModuleLayerCounter(1))
-            .add_event::<SpawnModuleEvent>()
-            .add_event::<SpawnModuleInternalEvent>()
-            .add_event::<ResizeEvent>()
-            .add_systems(PreUpdate, spawn_module.run_if(on_event::<SpawnModuleEvent>))
-            .add_systems(Update, resize_images.run_if(on_event::<ResizeEvent>))
+            .add_message::<SpawnModuleEvent>()
+            .add_message::<SpawnModuleInternalEvent>()
+            .add_message::<ResizeEvent>()
+            .add_systems(PreUpdate, spawn_module.run_if(on_message::<SpawnModuleEvent>))
+            .add_systems(Update, resize_images.run_if(on_message::<ResizeEvent>))
             .add_plugins(noise::NoiseModule)
             .add_plugins(pong::PongModule)
             // .add_systems(Update, (
@@ -93,7 +93,7 @@ impl Plugin for ModulePlugin {
 
 #[derive(Component)]
 pub struct FirstPassEntity {
-    ModuleId: Entity,
+    module_id: Entity,
 }
 
 
@@ -162,7 +162,7 @@ pub fn spawn_module(
         ev_spawnmodule.write(SpawnModuleInternalEvent {
             moduleclass: ev.moduleclass,
             layer: first_pass_layer.clone(),
-            moduleID: spriteid,
+            module_id: spriteid,
         });
     }
 }

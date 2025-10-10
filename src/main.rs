@@ -2,22 +2,14 @@ mod common;
 mod module;
 mod ui;
 
-use bevy_egui::EguiContext;
 use common::*;
 
-// use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
-// use bevy::diagnostic::LogDiagnosticsPlugin;
-
-// use bevy_simple_subsecond_system::prelude::*;
-
-use bevy::{dev_tools::fps_overlay::{FpsOverlayConfig, FpsOverlayPlugin, FrameTimeGraphConfig}, prelude::*, sprite_render::Material2dPlugin, window::PrimaryWindow};
-use std::path::Path;
+use bevy::{dev_tools::fps_overlay::{FpsOverlayConfig, FpsOverlayPlugin, FrameTimeGraphConfig}, prelude::*, sprite_render::Material2dPlugin};
 
 struct OverlayColor;
 
 // use bevy::prelude::ComputedNode; TODO find feature flag for this
 impl OverlayColor {
-    const RED: Color = Color::srgb(1.0, 0.0, 0.0);
     const GREEN: Color = Color::srgb(0.0, 1.0, 0.0);
 }
 
@@ -89,13 +81,7 @@ fn main() {
                     },
                 },
             },
-
-
-            // LogDiagnosticsPlugin::default(),
         ))
-        // .add_plugins(PersistentWindowsPlugin)
-        // .add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin::default())
-        // .add_plugins(SimpleSubsecondPlugin::default())
         .add_plugins(Material2dPlugin::<CustomMaterial>::default())
         // .edit_schedule(Update, |schedule| {
         //     schedule.set_executor_kind(ExecutorKind::SingleThreaded);
@@ -108,7 +94,6 @@ fn main() {
         .add_systems(PreUpdate, trigger_restart)
         .add_systems(PreStartup, spawn_immortals)
         .add_plugins(module::ModulePlugin)
-        // .add_plugins(PerfUiPlugin)
         .add_plugins(ui::BumpUiPlugin);
 
     bevyapp.run();
@@ -126,26 +111,23 @@ fn restart(mut next_state: ResMut<NextState<AppState>>) {
 fn trigger_restart(
     input: Res<ButtonInput<KeyCode>>,
     mut next_state: ResMut<NextState<AppState>>,
-    mut app_exit_events: ResMut<Events<bevy::app::AppExit>>,
+    mut app_exit_events: ResMut<Messages<bevy::app::AppExit>>,
 ) {
     if input.just_pressed(KeyCode::KeyR) {
         println!("user triggered restart");
         next_state.set(AppState::Restarting);
     } else if input.just_pressed(KeyCode::KeyT) {
         println!("user triggered FULL restart");
-        app_exit_events.send(bevy::app::AppExit::Success);
+        app_exit_events.write(bevy::app::AppExit::Success);
     }
 }
 
 /// Code that is actually! run once on startup of your program
 /// You can spawn entities with the Immortal component (above) here and they will not be removed when restarting
 fn spawn_immortals(
-    // mut settings: ResMut<bevy_framepace::FramepaceSettings>, TODO use builtin limiter
     mut commands: Commands,
 ) {
     println!("immortal");
-    // use bevy_framepace::Limiter;
-    // settings.limiter = Limiter::from_framerate(30.0);
 
     // main camera
     commands.spawn((Camera2d, Immortal));
@@ -203,20 +185,8 @@ fn teardown(
 /// Runs each time the scene is (re)started
 /// Sets up a circle that gets rendered to a texture and then shown on the main context
 
-fn setup(mut commands: Commands, mut next_state: ResMut<NextState<AppState>>) {
+fn setup(mut next_state: ResMut<NextState<AppState>>) {
     println!("setup!");
-
-    // create a simple Perf UI
-    // commands.spawn((
-    //     PerfUiRoot {
-    //         display_labels: false,
-    //         layout_horizontal: true,
-    //         values_col_width: 32.0,
-    //         ..default()
-    //     },
-    //     PerfUiEntryFPSWorst::default(),
-    //     PerfUiEntryFPS::default(),
-    // )); TODO USE BUILTIN PERF UI
 
     next_state.set(AppState::Running);
 }

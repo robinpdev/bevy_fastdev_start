@@ -9,7 +9,7 @@ impl Plugin for PongModule {
         app.add_systems(
             Update,
             spawn_module.run_if(
-                on_event::<SpawnModuleInternalEvent>.and(run_if_module::<SpawnModuleInternalEvent>(ModuleClass::Pong)),
+                on_message::<SpawnModuleInternalEvent>.and(run_if_module::<SpawnModuleInternalEvent>(ModuleClass::Pong)),
             ),
         )
         .add_systems(Update, pong_system.run_if(in_state(AppState::Running)));
@@ -17,7 +17,7 @@ impl Plugin for PongModule {
 }
 
 fn spawn_module(
-    mut ev_spawn: EventReader<SpawnModuleInternalEvent>,
+    mut ev_spawn: MessageReader<SpawnModuleInternalEvent>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut shadermaterials: ResMut<Assets<CustomMaterial>>,
@@ -36,7 +36,7 @@ fn spawn_module(
             Transform::default(),
             HDirection::Right,
             VDirection::Up,
-            FirstPassEntity{ModuleId: ev.moduleID},
+            FirstPassEntity{module_id: ev.module_id},
             ev.layer.clone(),
         ));
     }
@@ -54,7 +54,7 @@ fn pong_system(
     // }
 
     for (mut pos, mut vdir, mut hdir, fpe) in &mut query {
-        let sprite = modules.get(fpe.ModuleId).unwrap();
+        let sprite = modules.get(fpe.module_id).unwrap();
         let boxwidth = sprite.custom_size.unwrap().x;
         let boxheight = sprite.custom_size.unwrap().y;
 

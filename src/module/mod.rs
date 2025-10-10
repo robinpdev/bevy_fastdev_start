@@ -99,7 +99,7 @@ pub struct FirstPassEntity {
 
 pub fn spawn_module(
     mut ev_spawn: MessageReader<SpawnModuleEvent>,
-    mut ev_spawnmodule: EventWriter<SpawnModuleInternalEvent>,
+    mut ev_spawnmodule: MessageWriter<SpawnModuleInternalEvent>,
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
     mut layer_counter: ResMut<ModuleLayerCounter>,
@@ -174,7 +174,7 @@ fn resize_images(
     mut ev_resize: MessageReader<ResizeEvent>,
 ) {
     for ev in ev_resize.read() {
-        if let Ok((sprite, mut win)) = wins.get(ev.target) {
+        if let Ok((sprite, mut _win)) = wins.get(ev.target) {
             let image = assets.get_mut(&sprite.image).unwrap();
 
             let size = Extent3d {

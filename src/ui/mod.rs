@@ -1,5 +1,4 @@
-use crate::common::{BOXHEIGHT, BOXWIDTH, CustomMaterial, ModuleWin};
-use crate::module::{ModuleLayerCounter, spawn_module};
+use crate::common::{BOXHEIGHT, BOXWIDTH, ModuleWin};
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
 
@@ -19,8 +18,8 @@ impl Plugin for BumpUiPlugin {
 
 
 fn ui_example_system(
-    mut ev_spawnmodule: EventWriter<SpawnModuleEvent>,
-    mut ev_resize: EventWriter<ResizeEvent>,
+    mut ev_spawnmodule: MessageWriter<SpawnModuleEvent>,
+    mut ev_resize: MessageWriter<ResizeEvent>,
     mut contexts: EguiContexts,
     query: Query<(Entity, &mut Transform, &mut ModuleWin, &mut Sprite)>,
     windows: Query<&mut Window>,
@@ -40,7 +39,7 @@ fn ui_example_system(
             }
         });
 
-        for (entity, mut tf, mut mw, mut sprite) in query {
+        for (entity, mut tf, mw, mut sprite) in query {
             let title = format!("{:?} module", mw.class);
             let window = egui::Window::new(title)
                 .id(egui::Id::new(entity.index()))

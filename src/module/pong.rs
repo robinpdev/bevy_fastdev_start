@@ -7,7 +7,6 @@ pub struct PongModule;
 impl Plugin for PongModule {
     fn build(&self, app: &mut App) {
         app
-            .add_observer(spawn_module)
             .add_systems(OnEnter(AppState::Startup), setup)
             .add_systems(Update, pong_system.run_if(in_state(AppState::Running)));
     }
@@ -20,7 +19,7 @@ fn setup(
     let eid = commands.spawn((ModuleSpawner{
             class: ModuleClass::Pong
         },))
-        .observe(spawn_noise_module)
+        .observe(spawn_module)
         .id();
 
     spawnerconfig.observers.insert(ModuleClass::Pong, vec![eid]);

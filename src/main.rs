@@ -60,7 +60,7 @@ fn main() {
                 config: FpsOverlayConfig {
                     text_config: TextFont {
                         // Here we define size of our overlay
-                        font_size: 42.0,
+                        font_size: 18.0,
                         // If we want, we can use a custom font
                         font: default(),
                         // We could also disable font smoothing,
@@ -73,7 +73,7 @@ fn main() {
                     refresh_interval: core::time::Duration::from_millis(100),
                     enabled: true,
                     frame_time_graph_config: FrameTimeGraphConfig {
-                        enabled: true,
+                        enabled: false,
                         // The minimum acceptable fps
                         min_fps: 30.0,
                         // The target fps

@@ -38,6 +38,11 @@ pub struct ModuleWin {
     pub class: ModuleClass,
 }
 
+#[derive(Component)]
+pub struct ModuleSpawner {
+    pub class : ModuleClass,
+}
+
 /// Boilerplate for setting up a basic restarting architecture:
 /// The two states (Re)starting and Running
 #[derive(States, Default, Debug, Clone, Hash, Eq, PartialEq)]

@@ -6,40 +6,49 @@ pub struct PongModule;
 
 impl Plugin for PongModule {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            spawn_module.run_if(
-                on_message::<SpawnModuleInternalEvent>.and(run_if_module::<SpawnModuleInternalEvent>(ModuleClass::Pong)),
-            ),
-        )
-        .add_systems(Update, pong_system.run_if(in_state(AppState::Running)));
+        app
+            .add_observer(spawn_module)
+            .add_systems(OnEnter(AppState::Startup), setup)
+            .add_systems(Update, pong_system.run_if(in_state(AppState::Running)));
     }
 }
 
+fn setup(
+    mut commands: Commands,
+    mut spawnerconfig: ResMut<ModuleSpawnerConfig>
+){
+    let eid = commands.spawn((ModuleSpawner{
+            class: ModuleClass::Pong
+        },))
+        .observe(spawn_noise_module)
+        .id();
+
+    spawnerconfig.observers.insert(ModuleClass::Pong, vec![eid]);
+}
+
 fn spawn_module(
-    mut ev_spawn: MessageReader<SpawnModuleInternalEvent>,
+    spawn: On<SpawnModuleInternalEvent>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut shadermaterials: ResMut<Assets<CustomMaterial>>,
 ) {
+    if spawn.moduleclass != ModuleClass::Pong { return };
     // Spawn the noise module entities here
     println!("Spawning Pong Module");
 
-    for ev in ev_spawn.read() {
-        //first pass circle mesh
-        commands.spawn((
-            Mesh2d(meshes.add(Circle::new(RADIUS))),
-            //MeshMaterial2d(colormaterials.add(Color::srgb(0.0, 1.0, 0.0))),
-            MeshMaterial2d(shadermaterials.add(CustomMaterial {
-                color: LinearRgba::RED,
-            })),
-            Transform::default(),
-            HDirection::Right,
-            VDirection::Up,
-            FirstPassEntity{module_id: ev.module_id},
-            ev.layer.clone(),
-        ));
-    }
+    //first pass circle mesh
+    commands.spawn((
+        Mesh2d(meshes.add(Circle::new(RADIUS))),
+        //MeshMaterial2d(colormaterials.add(Color::srgb(0.0, 1.0, 0.0))),
+        MeshMaterial2d(shadermaterials.add(CustomMaterial {
+            color: LinearRgba::RED,
+        })),
+        Transform::default(),
+        HDirection::Right,
+        VDirection::Up,
+        FirstPassEntity{module_id: spawn.module_sprite_id},
+        spawn.layer.clone(),
+    ));
 }
 
 /// Rotates the inner cube (first pass)

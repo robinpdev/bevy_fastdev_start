@@ -1,28 +1,35 @@
+use bevy::ecs::relationship::RelationshipSourceCollection;
 use bevy::prelude::*;
 
 use crate::module::*;
 
+use bevy::sprite_render::Material2dPlugin;
 use bevy::{reflect::TypePath, render::render_resource::AsBindGroup};
-use bevy::{sprite_render::Material2dPlugin};
 
-
-use bevy::{
-    shader::ShaderRef,
-    sprite_render::{Material2d},
-};
+use bevy::{shader::ShaderRef, sprite_render::Material2d};
 
 pub struct NoiseModule;
 
 impl Plugin for NoiseModule {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            (spawn_module).run_if(
-                on_message::<SpawnModuleInternalEvent>.and(run_if_module::<SpawnModuleEvent>(ModuleClass::Noise)),),
-            
-        )
-        .add_plugins(Material2dPlugin::<NoiseMaterial>::default());
+        app
+            .add_plugins(Material2dPlugin::<NoiseMaterial>::default())
+            .add_systems(OnEnter(AppState::Startup), setup)
+        ;
     }
+}
+
+fn setup(
+    mut commands: Commands,
+    mut spawnerconfig: ResMut<ModuleSpawnerConfig>
+){
+    let eid = commands.spawn((ModuleSpawner{
+            class: ModuleClass::Noise
+        },))
+        .observe(spawn_noise_module)
+        .id();
+
+    spawnerconfig.observers.insert(ModuleClass::Noise, vec![eid]);
 }
 
 // fn resize_rect(
@@ -51,27 +58,26 @@ impl Material2d for NoiseMaterial {
     // }
 }
 
-fn spawn_module(
-    mut ev_spawn: MessageReader<SpawnModuleInternalEvent>,
+pub fn spawn_noise_module(
+    spawn: On<SpawnModuleInternalEvent>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut shadermaterials: ResMut<Assets<NoiseMaterial>>,
 ) {
+    if spawn.moduleclass != ModuleClass::Noise { return };
     // Spawn the noise module entities here
     println!("Spawning Noise Module");
 
-    for ev in ev_spawn.read() {
-        commands.spawn((
-            Mesh2d(meshes.add(Rectangle::new(BOXWIDTH, BOXHEIGHT))),
-            //MeshMaterial2d(colormaterials.add(Color::srgb(0.0, 1.0, 0.0))),
-            MeshMaterial2d(shadermaterials.add(NoiseMaterial {
-                color: LinearRgba::GREEN,
-            })),
-            Transform::default(),
-            FirstPassEntity {
-                module_id: ev.module_id,
-            },
-            ev.layer.clone(),
-        ));
-    }
+    commands.spawn((
+        Mesh2d(meshes.add(Rectangle::new(BOXWIDTH, BOXHEIGHT))),
+        //MeshMaterial2d(colormaterials.add(Color::srgb(0.0, 1.0, 0.0))),
+        MeshMaterial2d(shadermaterials.add(NoiseMaterial {
+            color: LinearRgba::GREEN,
+        })),
+        Transform::default(),
+        FirstPassEntity {
+            module_id: spawn.module_sprite_id,
+        },
+        spawn.layer.clone(),
+    ));
 }

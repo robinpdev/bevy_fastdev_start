@@ -1,8 +1,8 @@
-use crate::common::{BOXHEIGHT, BOXWIDTH, ModuleWin};
+use crate::{common::{ModuleWin, BOXHEIGHT, BOXWIDTH}, module::ResizeModule};
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
 
-use crate::module::{ModuleClass, SpawnModuleEvent, ResizeEvent};
+use crate::module::{ModuleClass, SpawnModuleEvent};
 
 // use bevy_simple_subsecond_system::prelude::*;
 
@@ -18,22 +18,21 @@ impl Plugin for BumpUiPlugin {
 
 
 fn ui_example_system(
-    mut ev_spawnmodule: MessageWriter<SpawnModuleEvent>,
-    mut ev_resize: MessageWriter<ResizeEvent>,
+    mut commands : Commands,
     mut contexts: EguiContexts,
     query: Query<(Entity, &mut Transform, &mut ModuleWin, &mut Sprite)>,
     windows: Query<&mut Window>,
 ) -> Result {
     if let Ok(win) = windows.single() {
         // new window with our spawn button
-        egui::SidePanel::left("Module Spawner").show(contexts.ctx_mut()?, |ui| {
+        egui::SidePanel::right("Module Spawner").show(contexts.ctx_mut()?, |ui| {
             if ui.button("Spawn pong Module").clicked() {
-                ev_spawnmodule.write(SpawnModuleEvent {
+                commands.trigger(SpawnModuleEvent {
                     moduleclass: ModuleClass::Pong,
                 });
             }
             if ui.button("Spawn noise Module").clicked() {
-                ev_spawnmodule.write(SpawnModuleEvent {
+                commands.trigger(SpawnModuleEvent {
                     moduleclass: ModuleClass::Noise,
                 });
             }
@@ -75,11 +74,13 @@ fn ui_example_system(
                     x: newsize.0 as f32,
                     y: newsize.1 as f32,
                 });
-                ev_resize.write(ResizeEvent {
-                    target: entity,
+
+                commands.trigger(ResizeModule {
+                    entity: entity,
                     width: newsize.0 as f32,
                     height: newsize.1 as f32,
-                });
+                })
+
             }
 
             // set sprite position to window position

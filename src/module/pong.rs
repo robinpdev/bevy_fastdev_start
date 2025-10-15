@@ -45,9 +45,10 @@ fn spawn_module(
         Transform::default(),
         HDirection::Right,
         VDirection::Up,
-        FirstPassEntity{module_id: spawn.module_sprite_id},
+        FirstPassEntity{module_id: spawn.root_id},
         spawn.layer.clone(),
     ));
+
 }
 
 /// Rotates the inner cube (first pass)

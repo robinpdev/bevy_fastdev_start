@@ -27,6 +27,7 @@ fn setup(
             class: ModuleClass::Noise
         },))
         .observe(spawn_noise_module)
+        .observe(resize_surface)
         .id();
 
     spawnerconfig.observers.insert(ModuleClass::Noise, vec![eid]);
@@ -68,16 +69,34 @@ pub fn spawn_noise_module(
     // Spawn the noise module entities here
     println!("Spawning Noise Module");
 
-    commands.spawn((
-        Mesh2d(meshes.add(Rectangle::new(BOXWIDTH, BOXHEIGHT))),
+    let shadersurface : Entity = commands.spawn((
+        Mesh2d(meshes.add(Rectangle::new(1., 1.))),
         //MeshMaterial2d(colormaterials.add(Color::srgb(0.0, 1.0, 0.0))),
         MeshMaterial2d(shadermaterials.add(NoiseMaterial {
             color: LinearRgba::GREEN,
         })),
-        Transform::default(),
+        Transform::default().with_scale(Vec3::new(BOXWIDTH, BOXHEIGHT, 1.0)),
         FirstPassEntity {
-            module_id: spawn.module_sprite_id,
+            module_id: spawn.root_id,
         },
         spawn.layer.clone(),
-    ));
+    )).id();
+
+    commands.entity(spawn.root_id).add_child(shadersurface);
+}
+
+fn resize_surface(
+    resize: On<ResizeModule>,
+    mut surfaces: Query<&mut Transform, With<Mesh2d>>,
+    roots: Query<&Children, With<ModuleWin>>,
+){
+    println!("resizing surface...");
+    if let Ok(rootchildren) = roots.get(resize.entity){
+        for child in rootchildren.iter(){
+            if let Ok(mut transform) = surfaces.get_mut(child){
+                let newscale = Vec3::new(resize.width, resize.height, 1.0);
+                transform.scale = newscale;
+            }
+        }
+    }
 }

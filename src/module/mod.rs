@@ -20,7 +20,7 @@ pub enum ModuleClass {
     Noise,
 }
 
-trait ModuleClassAttrs{
+trait ModuleClassAttrs {
     const SPAWN_OBSERVER: Observer;
 }
 
@@ -35,10 +35,11 @@ pub struct SpawnModuleEvent {
 
 #[derive(EntityEvent)]
 pub struct SpawnModuleInternalEvent {
-    pub entity: Entity,
+    #[event_target]
+    pub spawner: Entity,
     pub moduleclass: ModuleClass,
     pub layer: RenderLayers,
-    pub module_sprite_id: Entity,
+    pub root_id: Entity,
 }
 
 impl HasModuleClass for SpawnModuleInternalEvent {
@@ -54,14 +55,21 @@ pub struct ResizeModule {
     pub height: f32,
 }
 
+#[derive(EntityEvent)]
+pub struct ResizeModuleInternal {
+    #[event_target]
+    pub spawner: Entity,
+    pub width: f32,
+    pub height: f32,
+}
+
 #[derive(Resource)]
 pub struct ModuleLayerCounter(pub u8);
 
 #[derive(Resource)]
-pub struct ModuleSpawnerConfig{
-    pub observers : HashMap<ModuleClass, Vec<Entity>>,
+pub struct ModuleSpawnerConfig {
+    pub observers: HashMap<ModuleClass, Vec<Entity>>,
 }
-
 
 pub struct ModulePlugin;
 
@@ -100,12 +108,30 @@ pub struct FirstPassEntity {
     module_id: Entity,
 }
 
+fn trigger_spawner<'a, E: Event<Trigger<'a>: Default>, F>(
+    mut commands: Commands,
+    spawnconfig: &ModuleSpawnerConfig,
+    class: ModuleClass,
+    make_event: F,
+) where
+    F: Fn(Entity) -> E,
+{
+    print!("sending message to ");
+    if let Some(spawners) = spawnconfig.observers.get(&class) {
+        for spawner in spawners.iter() {
+            let ev = make_event(*spawner);
+            println!(": {:?}", spawner);
+            commands.trigger(ev);
+        }
+    }
+}
+
 pub fn spawn_module_observer(
     spawn: On<SpawnModuleEvent>,
     mut commands: Commands,
     mut images: ResMut<Assets<Image>>,
     mut layer_counter: ResMut<ModuleLayerCounter>,
-    spawnconfig : Res<ModuleSpawnerConfig>,
+    spawnconfig: Res<ModuleSpawnerConfig>,
 ) {
     println!("module setup!");
     // rendered texture
@@ -163,26 +189,27 @@ pub fn spawn_module_observer(
         first_pass_layer.clone(),
     ));
 
-    if let Some(spawners) = spawnconfig.observers.get(&spawn.moduleclass){
-        for spawner in spawners.iter(){
-            commands.trigger(SpawnModuleInternalEvent{
-                entity: *spawner,
-                moduleclass: spawn.moduleclass,
-                layer: first_pass_layer.clone(),
-                module_sprite_id: spriteid,
-            });
-        }
-    }
-
-
+    trigger_spawner::<SpawnModuleInternalEvent, _>(
+        commands,
+        &spawnconfig,
+        spawn.moduleclass,
+        |spawner| SpawnModuleInternalEvent {
+            spawner,
+            moduleclass: spawn.moduleclass,
+            layer: first_pass_layer.clone(),
+            root_id: spriteid,
+        },
+    );
 }
 
 fn resize_image_observer(
     resize: On<ResizeModule>,
+    commands: Commands,
     mut assets: ResMut<Assets<Image>>,
     wins: Query<(&Sprite, &mut ModuleWin)>,
+    spawnconfig: Res<ModuleSpawnerConfig>,
 ) {
-    if let Ok((sprite, mut _win)) = wins.get(resize.entity) {
+    if let Ok((sprite, win)) = wins.get(resize.entity) {
         let image = assets.get_mut(&sprite.image).unwrap();
 
         let size = Extent3d {
@@ -191,5 +218,13 @@ fn resize_image_observer(
             ..default()
         };
         image.resize(size);
+
+        trigger_spawner::<ResizeModuleInternal, _>(commands, &spawnconfig, win.class, |spawner| {
+            ResizeModuleInternal {
+                spawner,
+                width: resize.width,
+                height: resize.height,
+            }
+        });
     }
 }

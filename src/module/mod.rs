@@ -59,6 +59,7 @@ pub struct ResizeModule {
 pub struct ResizeModuleInternal {
     #[event_target]
     pub spawner: Entity,
+    pub moduleroot: Entity,
     pub width: f32,
     pub height: f32,
 }
@@ -71,21 +72,17 @@ pub struct ModuleSpawnerConfig {
     pub observers: HashMap<ModuleClass, Vec<Entity>>,
 }
 
-pub struct ModulePlugin;
 
-pub(self) fn run_if_module<T>(class: ModuleClass) -> impl Fn(MessageReader<T>) -> bool
-where
-    T: Message + HasModuleClass,
-{
-    move |mut evspawn| {
-        for ev in evspawn.read() {
-            if ev.get_module_class() == class {
-                return true;
-            }
-        }
-        false
-    }
-}
+#[derive(Component)]
+#[relationship_target(relationship = ModulePart, linked_spawn)]
+pub struct ModuleWithParts(Vec<Entity>);
+
+#[derive(Component)]
+#[relationship(relationship_target = ModuleWithParts)]
+pub struct ModulePart(pub Entity);
+
+
+pub struct ModulePlugin;
 
 impl Plugin for ModulePlugin {
     fn build(&self, app: &mut App) {
@@ -116,7 +113,6 @@ fn trigger_spawner<'a, E: Event<Trigger<'a>: Default>, F>(
 ) where
     F: Fn(Entity) -> E,
 {
-    print!("sending message to ");
     if let Some(spawners) = spawnconfig.observers.get(&class) {
         for spawner in spawners.iter() {
             let ev = make_event(*spawner);
@@ -222,6 +218,7 @@ fn resize_image_observer(
         trigger_spawner::<ResizeModuleInternal, _>(commands, &spawnconfig, win.class, |spawner| {
             ResizeModuleInternal {
                 spawner,
+                moduleroot: resize.entity,
                 width: resize.width,
                 height: resize.height,
             }

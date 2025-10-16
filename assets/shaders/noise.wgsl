@@ -44,14 +44,15 @@ fn noise3(p: vec3f) -> f32 {
 @fragment
 fn fragment(mesh: VertexOutput) -> @location(0) vec4<f32> {
     // Center the UV coordinates so (0,0) is the middle of the mesh
-    let centered_uv = mesh.uv - vec2<f32>(0.5, 0.5);
+    let resolution = view.viewport.zw;
+    let uv = (mesh.uv - vec2<f32>(0.5, 0.5)) * resolution / 400.0;
 
     // Use time to animate the pattern
     let time = globals.time;
 
     // Blend the dynamic color with the original material_color
     // The COLOR_MIX_POWER makes the blending more intense/sharper
-    let noise_value = noise3(vec3<f32>(centered_uv * 100.0, time));
+    let noise_value = noise3(vec3<f32>(uv * 100.0, time));
     var final_color = vec4<f32>(noise_value, noise_value, noise_value, 1.0);
 
     // You can still apply a global multiplier for overall brightness/alpha

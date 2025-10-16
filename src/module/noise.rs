@@ -79,19 +79,20 @@ pub fn spawn_noise_module(
         FirstPassEntity {
             module_id: spawn.root_id,
         },
-        spawn.layer.clone(),
+        ModulePart(spawn.root_id),
+        spawn.layer.clone()
     )).id();
 
-    commands.entity(spawn.root_id).add_child(shadersurface);
+    //commands.entity(spawn.root_id).add_child(shadersurface);
 }
 
 fn resize_surface(
-    resize: On<ResizeModule>,
+    resize: On<ResizeModuleInternal>,
     mut surfaces: Query<&mut Transform, With<Mesh2d>>,
-    roots: Query<&Children, With<ModuleWin>>,
+    roots: Query<&ModuleWithParts, With<ModuleWin>>,
 ){
     println!("resizing surface...");
-    if let Ok(rootchildren) = roots.get(resize.entity){
+    if let Ok(rootchildren) = roots.get(resize.moduleroot){
         for child in rootchildren.iter(){
             if let Ok(mut transform) = surfaces.get_mut(child){
                 let newscale = Vec3::new(resize.width, resize.height, 1.0);

@@ -1,5 +1,6 @@
 use bevy::ecs::relationship::RelationshipSourceCollection;
 use bevy::prelude::*;
+use bevy::render::extract_component::ComponentUniforms;
 
 use crate::module::*;
 
@@ -7,6 +8,7 @@ use bevy::sprite_render::Material2dPlugin;
 use bevy::{reflect::TypePath, render::render_resource::AsBindGroup};
 
 use bevy::{shader::ShaderRef, sprite_render::Material2d};
+use bevy::render::render_asset::RenderAsset;
 
 pub struct NoiseModule;
 
@@ -42,6 +44,10 @@ fn setup(
 pub struct NoiseMaterial {
     #[uniform(0)]
     pub color: LinearRgba,
+    #[uniform(1)]
+    pub width: f32,
+    #[uniform(2)]
+    pub height: f32,
 }
 
 /// This example uses a shader source file from the assets subdirectory
@@ -59,6 +65,9 @@ impl Material2d for NoiseMaterial {
     // }
 }
 
+#[derive(Component)]
+pub struct WithShader(Handle<NoiseMaterial>);
+
 pub fn spawn_noise_module(
     spawn: On<SpawnModuleInternalEvent>,
     mut commands: Commands,
@@ -69,34 +78,44 @@ pub fn spawn_noise_module(
     // Spawn the noise module entities here
     println!("Spawning Noise Module");
 
+    let shader = shadermaterials.add(NoiseMaterial {
+            color: LinearRgba::GREEN,
+            width: BOXWIDTH,
+            height: BOXHEIGHT
+        });
+
     let shadersurface : Entity = commands.spawn((
         Mesh2d(meshes.add(Rectangle::new(1., 1.))),
         //MeshMaterial2d(colormaterials.add(Color::srgb(0.0, 1.0, 0.0))),
-        MeshMaterial2d(shadermaterials.add(NoiseMaterial {
-            color: LinearRgba::GREEN,
-        })),
+        MeshMaterial2d(shader.clone()),
+        WithShader(shader),
         Transform::default().with_scale(Vec3::new(BOXWIDTH, BOXHEIGHT, 1.0)),
         FirstPassEntity {
             module_id: spawn.root_id,
         },
         ModulePart(spawn.root_id),
-        spawn.layer.clone()
+        // spawn.layer.clone()
     )).id();
 
-    //commands.entity(spawn.root_id).add_child(shadersurface);
+    commands.entity(spawn.root_id).add_child(shadersurface);
 }
 
 fn resize_surface(
     resize: On<ResizeModuleInternal>,
-    mut surfaces: Query<&mut Transform, With<Mesh2d>>,
+    mut materials: ResMut<Assets<NoiseMaterial>>,
+    mut surfaces: Query<(&mut Transform, &MeshMaterial2d<NoiseMaterial>), With<Mesh2d>>,
     roots: Query<&ModuleWithParts, With<ModuleWin>>,
 ){
     println!("resizing surface...");
     if let Ok(rootchildren) = roots.get(resize.moduleroot){
         for child in rootchildren.iter(){
-            if let Ok(mut transform) = surfaces.get_mut(child){
+            if let Ok((mut transform, materialref)) = surfaces.get_mut(child){
                 let newscale = Vec3::new(resize.width, resize.height, 1.0);
                 transform.scale = newscale;
+                if let Some(shader) = materials.get_mut(materialref.id()){
+                    shader.width = resize.width;
+                    shader.height = resize.height;
+                }
             }
         }
     }

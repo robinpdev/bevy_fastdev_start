@@ -36,6 +36,8 @@ pub struct Immortal;
 #[derive(Component)]
 pub struct ModuleWin {
     pub class: ModuleClass,
+    pub width: f32,
+    pub height: f32
 }
 
 #[derive(Component)]

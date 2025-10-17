@@ -20,7 +20,7 @@ impl Plugin for BumpUiPlugin {
 fn ui_example_system(
     mut commands : Commands,
     mut contexts: EguiContexts,
-    query: Query<(Entity, &mut Transform, &mut ModuleWin, &mut Sprite)>,
+    query: Query<(Entity, &mut Transform, &mut ModuleWin)>,
     windows: Query<&mut Window>,
 ) -> Result {
     if let Ok(win) = windows.single() {
@@ -38,7 +38,7 @@ fn ui_example_system(
             }
         });
 
-        for (entity, mut tf, mw, mut sprite) in query {
+        for (entity, mut tf, mut mw) in query {
             let title = format!("{:?} module", mw.class);
             let window = egui::Window::new(title)
                 .id(egui::Id::new(entity.index()))
@@ -47,10 +47,10 @@ fn ui_example_system(
                 .min_height(20.0)
                 .default_size([BOXWIDTH, BOXHEIGHT])
                 .constrain(false)
-                .title_bar(false)
+                .title_bar(true)
                 .frame(
                     egui::Frame::default()
-                        .fill(egui::Color32::TRANSPARENT)
+                        // .fill(egui::Color32::TRANSPARENT)
                         // .stroke(egui::Stroke::new(4.0, egui::Color32::BLACK)),
                 )
                 .show(contexts.ctx_mut()?, |ui| {
@@ -66,14 +66,17 @@ fn ui_example_system(
 
             // set sprite custom size to window size if updated
             if (
-                sprite.custom_size.unwrap().x as u32,
-                sprite.custom_size.unwrap().y as u32,
+                mw.width as u32,
+                mw.height as u32,
             ) != newsize
             {
-                sprite.custom_size = Some(Vec2 {
-                    x: newsize.0 as f32,
-                    y: newsize.1 as f32,
-                });
+                // sprite.custom_size = Some(Vec2 {
+                //     x: newsize.0 as f32,
+                //     y: newsize.1 as f32,
+                // });
+
+                mw.height = newsize.1 as f32;
+                mw.width = newsize.0 as f32;
 
                 commands.trigger(ResizeModule {
                     entity: entity,

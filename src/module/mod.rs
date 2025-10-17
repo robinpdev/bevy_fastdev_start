@@ -160,9 +160,11 @@ pub fn spawn_module_observer(
     });
     let spriteid = commands
         .spawn((
-            sprite,
+            // sprite,
             ModuleWin {
                 class: spawn.moduleclass,
+                width: BOXWIDTH,
+                height: BOXHEIGHT,
             },
             Transform::from_translation(Vec3::new(0.0, 0.0, layer_counter.0 as f32 * 0.01)),
         ))
@@ -174,16 +176,16 @@ pub fn spawn_module_observer(
     layer_counter.0 += 1;
 
     //first pass camera
-    commands.spawn((
-        Camera2d::default(),
-        Camera {
-            target: image_handle.clone().into(),
-            clear_color: Color::WHITE.into(),
-            ..default()
-        },
-        Transform::from_translation(Vec3::new(0.0, 0.0, 15.0)).looking_at(Vec3::ZERO, Vec3::Y),
-        first_pass_layer.clone(),
-    ));
+    // commands.spawn((
+    //     Camera2d::default(),
+    //     Camera {
+    //         target: image_handle.clone().into(),
+    //         clear_color: Color::WHITE.into(),
+    //         ..default()
+    //     },
+    //     Transform::from_translation(Vec3::new(0.0, 0.0, 15.0)).looking_at(Vec3::ZERO, Vec3::Y),
+    //     first_pass_layer.clone(),
+    // ));
 
     trigger_spawner::<SpawnModuleInternalEvent, _>(
         commands,
@@ -202,18 +204,18 @@ fn resize_image_observer(
     resize: On<ResizeModule>,
     commands: Commands,
     mut assets: ResMut<Assets<Image>>,
-    wins: Query<(&Sprite, &mut ModuleWin)>,
+    wins: Query<(&mut ModuleWin)>,
     spawnconfig: Res<ModuleSpawnerConfig>,
 ) {
-    if let Ok((sprite, win)) = wins.get(resize.entity) {
-        let image = assets.get_mut(&sprite.image).unwrap();
+    if let Ok((win)) = wins.get(resize.entity) {
+        // let image = assets.get_mut(&sprite.image).unwrap();
 
-        let size = Extent3d {
-            width: resize.width as u32,
-            height: resize.height as u32,
-            ..default()
-        };
-        image.resize(size);
+        // let size = Extent3d {
+        //     width: resize.width as u32,
+        //     height: resize.height as u32,
+        //     ..default()
+        // };
+        // image.resize(size);
 
         trigger_spawner::<ResizeModuleInternal, _>(commands, &spawnconfig, win.class, |spawner| {
             ResizeModuleInternal {

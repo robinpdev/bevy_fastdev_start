@@ -7,10 +7,14 @@ const STARBURST_DENSITY: f32 = 15.0; // How many "points" the starburst has
 const PULSE_SPEED: f32 = 40.0;       // How fast the colors change and pulse
 const COLOR_MIX_POWER: f32 = 3.0;   // Controls the intensity of color blending
 
-@group(2) @binding(0) var<uniform> material_color: vec4<f32>;
-
 // Bevy provides a View uniform which includes time!
 @group(0) @binding(0) var<uniform> view: View;
+
+@group(2) @binding(0) var<uniform> material_color: vec4<f32>;
+
+@group(2) @binding(1) var<uniform> width: f32;
+@group(2) @binding(2) var<uniform> height: f32;
+
 
 
 // MIT License. © Stefan Gustavson, Munrocket
@@ -45,7 +49,7 @@ fn noise3(p: vec3f) -> f32 {
 fn fragment(mesh: VertexOutput) -> @location(0) vec4<f32> {
     // Center the UV coordinates so (0,0) is the middle of the mesh
     let resolution = view.viewport.zw;
-    let uv = (mesh.uv - vec2<f32>(0.5, 0.5)) * resolution / 400.0;
+    let uv = (mesh.uv - vec2<f32>(0.5, 0.5)) * vec2<f32>(width, height) / 400.0;
 
     // Use time to animate the pattern
     let time = globals.time;

@@ -9,6 +9,8 @@ use bevy::{reflect::TypePath, render::render_resource::AsBindGroup};
 
 use bevy::{shader::ShaderRef, sprite_render::Material2d};
 use bevy::render::render_asset::RenderAsset;
+use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
+
 
 pub struct NoiseModule;
 
@@ -17,8 +19,33 @@ impl Plugin for NoiseModule {
         app
             .add_plugins(Material2dPlugin::<NoiseMaterial>::default())
             .add_systems(OnEnter(AppState::Startup), setup)
+            .add_systems(EguiPrimaryContextPass, ui_noise);
         ;
     }
+}
+
+fn ui_noise(
+    mut commands : Commands,
+    mut contexts: EguiContexts,
+    query: Query<(Entity, &mut Transform, &mut ModuleWin)>,
+    windows: Query<&mut Window>,
+) -> Result {
+    if let Ok(win) = windows.single() {
+        egui::Window::new("Noise params").show(contexts.ctx_mut()?, |ui| {
+            if ui.button("Spawn pong Module").clicked() {
+                commands.trigger(SpawnModuleEvent {
+                    moduleclass: ModuleClass::Pong,
+                });
+            }
+            if ui.button("Spawn noise Module").clicked() {
+                commands.trigger(SpawnModuleEvent {
+                    moduleclass: ModuleClass::Noise,
+                });
+            }
+        });
+    }
+    Ok(())
+
 }
 
 fn setup(

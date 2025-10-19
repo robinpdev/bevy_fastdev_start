@@ -31,12 +31,12 @@ fn spawn_module(
     mut meshes: ResMut<Assets<Mesh>>,
     mut shadermaterials: ResMut<Assets<CustomMaterial>>,
 ) {
-    if spawn.moduleclass != ModuleClass::Pong { return };
+    // if spawn.moduleclass != ModuleClass::Pong { return };
     // Spawn the noise module entities here
     println!("Spawning Pong Module");
 
     //first pass circle mesh
-    commands.spawn((
+    let ball = commands.spawn((
         Mesh2d(meshes.add(Circle::new(RADIUS))),
         //MeshMaterial2d(colormaterials.add(Color::srgb(0.0, 1.0, 0.0))),
         MeshMaterial2d(shadermaterials.add(CustomMaterial {
@@ -46,8 +46,9 @@ fn spawn_module(
         HDirection::Right,
         VDirection::Up,
         FirstPassEntity{module_id: spawn.root_id},
-        spawn.layer.clone(),
-    ));
+    )).id();
+
+    commands.entity(spawn.root_id).add_child(ball);
 
 }
 
@@ -55,7 +56,7 @@ fn spawn_module(
 
 fn pong_system(
     mut query: Query<(&mut Transform, &mut VDirection, &mut HDirection, &FirstPassEntity)>,
-    modules: Query<&Sprite, With<ModuleWin>>,
+    modules: Query<&ModuleWin>,
 ) {
     // for mut transform in &mut query {
     //     transform.rotate_x(1.5 * time.delta_secs());
@@ -63,9 +64,9 @@ fn pong_system(
     // }
 
     for (mut pos, mut vdir, mut hdir, fpe) in &mut query {
-        let sprite = modules.get(fpe.module_id).unwrap();
-        let boxwidth = sprite.custom_size.unwrap().x;
-        let boxheight = sprite.custom_size.unwrap().y;
+        let mw = modules.get(fpe.module_id).unwrap();
+        let boxwidth = mw.width;
+        let boxheight = mw.height;
 
         // println!("size: {:?} x {:?}", boxwidth, boxheight);
 

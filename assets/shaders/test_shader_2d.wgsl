@@ -15,7 +15,7 @@ const COLOR_MIX_POWER: f32 = 3.0;   // Controls the intensity of color blending
 @fragment
 fn fragment(mesh: VertexOutput) -> @location(0) vec4<f32> {
     // Center the UV coordinates so (0,0) is the middle of the mesh
-    let centered_uv = mesh.world_position - vec2<f32>(0.5, 0.5);
+    let centered_uv = mesh.uv - vec2<f32>(0.5, 0.5);
 
     // Calculate distance from the center (0.0 to approx 0.707 for corners)
     let distance = length(centered_uv);

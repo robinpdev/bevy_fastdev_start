@@ -14,6 +14,7 @@ const COLOR_MIX_POWER: f32 = 3.0;   // Controls the intensity of color blending
 
 @group(2) @binding(1) var<uniform> width: f32;
 @group(2) @binding(2) var<uniform> height: f32;
+@group(2) @binding(3) var<uniform> speed: f32;
 
 
 
@@ -56,7 +57,7 @@ fn fragment(mesh: VertexOutput) -> @location(0) vec4<f32> {
 
     // Blend the dynamic color with the original material_color
     // The COLOR_MIX_POWER makes the blending more intense/sharper
-    let noise_value = noise3(vec3<f32>(uv * 100.0, time));
+    let noise_value = noise3(vec3<f32>(uv * 100.0, time * speed));
     var final_color = vec4<f32>(noise_value, noise_value, noise_value, 1.0);
 
     // You can still apply a global multiplier for overall brightness/alpha

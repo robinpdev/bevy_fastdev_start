@@ -1,6 +1,4 @@
-use bevy::ecs::relationship::RelationshipSourceCollection;
 use bevy::prelude::*;
-use bevy::render::extract_component::ComponentUniforms;
 
 use crate::module::*;
 
@@ -8,58 +6,47 @@ use bevy::sprite_render::Material2dPlugin;
 use bevy::{reflect::TypePath, render::render_resource::AsBindGroup};
 
 use bevy::{shader::ShaderRef, sprite_render::Material2d};
-use bevy::render::render_asset::RenderAsset;
-use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
-
+use bevy_egui::{EguiContexts, EguiPrimaryContextPass, egui};
 
 pub struct NoiseModule;
 
 impl Plugin for NoiseModule {
     fn build(&self, app: &mut App) {
-        app
-            .add_plugins(Material2dPlugin::<NoiseMaterial>::default())
+        app.add_plugins(Material2dPlugin::<NoiseMaterial>::default())
             .add_systems(OnEnter(AppState::Startup), setup)
             .add_systems(EguiPrimaryContextPass, ui_noise);
-        ;
     }
 }
 
 fn ui_noise(
-    mut commands : Commands,
     mut contexts: EguiContexts,
-    query: Query<(Entity, &mut Transform, &mut ModuleWin)>,
     windows: Query<&mut Window>,
+    mut materials: ResMut<Assets<NoiseMaterial>>,
 ) -> Result {
-    if let Ok(win) = windows.single() {
-        egui::Window::new("Noise params").show(contexts.ctx_mut()?, |ui| {
-            if ui.button("Spawn pong Module").clicked() {
-                commands.trigger(SpawnModuleEvent {
-                    moduleclass: ModuleClass::Pong,
-                });
-            }
-            if ui.button("Spawn noise Module").clicked() {
-                commands.trigger(SpawnModuleEvent {
-                    moduleclass: ModuleClass::Noise,
-                });
-            }
-        });
+    for (shaderid, shader) in materials.iter_mut() {
+        if let Ok(_win) = windows.single() {
+            egui::Window::new(format!("Noise params"))
+            .id(egui::Id::new(shaderid))
+            .show(contexts.ctx_mut()?, |ui| {
+                ui.add(egui::Slider::new(&mut shader.speed, 0.0..=10.0).suffix("°"));
+            });
+        }
     }
     Ok(())
-
 }
 
-fn setup(
-    mut commands: Commands,
-    mut spawnerconfig: ResMut<ModuleSpawnerConfig>
-){
-    let eid = commands.spawn((ModuleSpawner{
-            class: ModuleClass::Noise
+fn setup(mut commands: Commands, mut spawnerconfig: ResMut<ModuleSpawnerConfig>) {
+    let eid = commands
+        .spawn((ModuleSpawner {
+            class: ModuleClass::Noise,
         },))
         .observe(spawn_noise_module)
         .observe(resize_surface)
         .id();
 
-    spawnerconfig.observers.insert(ModuleClass::Noise, vec![eid]);
+    spawnerconfig
+        .observers
+        .insert(ModuleClass::Noise, vec![eid]);
 }
 
 // fn resize_rect(
@@ -75,6 +62,8 @@ pub struct NoiseMaterial {
     pub width: f32,
     #[uniform(2)]
     pub height: f32,
+    #[uniform(3)]
+    pub speed: f32,
 }
 
 /// This example uses a shader source file from the assets subdirectory
@@ -86,14 +75,7 @@ impl Material2d for NoiseMaterial {
     fn fragment_shader() -> ShaderRef {
         SHADER_ASSET_PATH.into()
     }
-
-    // fn alpha_mode(&self) -> AlphaMode2d {
-    //     AlphaMode2d::Mask(0.5)
-    // }
 }
-
-#[derive(Component)]
-pub struct WithShader(Handle<NoiseMaterial>);
 
 pub fn spawn_noise_module(
     spawn: On<SpawnModuleInternalEvent>,
@@ -101,28 +83,32 @@ pub fn spawn_noise_module(
     mut meshes: ResMut<Assets<Mesh>>,
     mut shadermaterials: ResMut<Assets<NoiseMaterial>>,
 ) {
-    if spawn.moduleclass != ModuleClass::Noise { return };
+    if spawn.moduleclass != ModuleClass::Noise {
+        return;
+    };
     // Spawn the noise module entities here
     println!("Spawning Noise Module");
 
     let shader = shadermaterials.add(NoiseMaterial {
-            color: LinearRgba::GREEN,
-            width: BOXWIDTH,
-            height: BOXHEIGHT
-        });
+        color: LinearRgba::GREEN,
+        width: BOXWIDTH,
+        height: BOXHEIGHT,
+        speed: 1.0,
+    });
 
-    let shadersurface : Entity = commands.spawn((
-        Mesh2d(meshes.add(Rectangle::new(1., 1.))),
-        //MeshMaterial2d(colormaterials.add(Color::srgb(0.0, 1.0, 0.0))),
-        MeshMaterial2d(shader.clone()),
-        WithShader(shader),
-        Transform::default().with_scale(Vec3::new(BOXWIDTH, BOXHEIGHT, 1.0)),
-        FirstPassEntity {
-            module_id: spawn.root_id,
-        },
-        ModulePart(spawn.root_id),
-        // spawn.layer.clone()
-    )).id();
+    let shadersurface: Entity = commands
+        .spawn((
+            Mesh2d(meshes.add(Rectangle::new(1., 1.))),
+            //MeshMaterial2d(colormaterials.add(Color::srgb(0.0, 1.0, 0.0))),
+            MeshMaterial2d(shader.clone()),
+            Transform::default().with_scale(Vec3::new(BOXWIDTH, BOXHEIGHT, 1.0)),
+            FirstPassEntity {
+                module_id: spawn.root_id,
+            },
+            ModulePart(spawn.root_id),
+            // spawn.layer.clone()
+        ))
+        .id();
 
     commands.entity(spawn.root_id).add_child(shadersurface);
 }
@@ -132,14 +118,14 @@ fn resize_surface(
     mut materials: ResMut<Assets<NoiseMaterial>>,
     mut surfaces: Query<(&mut Transform, &MeshMaterial2d<NoiseMaterial>), With<Mesh2d>>,
     roots: Query<&ModuleWithParts, With<ModuleWin>>,
-){
+) {
     println!("resizing surface...");
-    if let Ok(rootchildren) = roots.get(resize.moduleroot){
-        for child in rootchildren.iter(){
-            if let Ok((mut transform, materialref)) = surfaces.get_mut(child){
+    if let Ok(rootchildren) = roots.get(resize.moduleroot) {
+        for child in rootchildren.iter() {
+            if let Ok((mut transform, materialref)) = surfaces.get_mut(child) {
                 let newscale = Vec3::new(resize.width, resize.height, 1.0);
                 transform.scale = newscale;
-                if let Some(shader) = materials.get_mut(materialref.id()){
+                if let Some(shader) = materials.get_mut(materialref.id()) {
                     shader.width = resize.width;
                     shader.height = resize.height;
                 }
